@@ -1,27 +1,24 @@
 @echo off
-
+set "scriptver=2.7.4"
+chcp 866
 for /f "tokens=3" %%b in ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v "BuildBranch"') do set br=%%b 
 set "locale=ru"
 for /f "tokens=3 delims=;:- " %%l in ('systeminfo ^| findstr /b /c:"System Locale:"') do set lang=%%l 
-for /f "tokens=3 delims=;:- " %%l in ('systeminfo ^| findstr /b /c:"Ð¯Ð·Ñ‹Ðº ÑÐ¸ÑÑ‚ÐµÐ¼Ñ‹:"') do set lang=%%l
+for /f "tokens=3 delims=;:- " %%l in ('systeminfo ^| findstr /b /c:"Ÿ§ëª á¨áâ¥¬ë:"') do set lang=%%l
 if /I %lang%==%locale%  ( goto :RU_LOCALE ) else ( goto :EN_LOCALE )
 
 :CHECK_BUILD
 for /f "tokens=4 delims=[] " %%i in ('ver') do set build=%%i
 if %build:~5,5% LSS 17763 (
     echo =============================================================
-    echo %chbuild1% %build:~5%. %chbuild2%
+    echo  %chbuild1% %build:~5%. %chbuild2%
     echo =============================================================
     echo.
     pause
-    goto :EOF
-) else ( 
-    goto :CHECK_ADMIN 
-    )
+    goto :EOF )
 
-:CHECK_ADMIN
-REG QUERY HKU\S-1-5-19\Environment >NUL 2>&1
-IF %ERRORLEVEL% EQU 0 goto :START_SCRIPT
+reg query HKU\S-1-5-19 1>nul 2>nul
+if %ERRORLEVEL% equ 0 goto :START_SCRIPT
 echo =====================================================
 echo %chadmin%
 echo =====================================================
@@ -29,46 +26,195 @@ echo.
 pause
 goto :EOF
 
+:START_SCRIPT
+set "FlightSigningEnabled=0"
+bcdedit /enum {current} | findstr /I /R /C:"^flightsigning *Yes$" >nul 2>&1
+if %ERRORLEVEL% equ 0 set "FlightSigningEnabled=1"
+
+:CHOICE_MENU
+cls
+set "WSH=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost"
+set "cver=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion"
+set "wdat=HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows"
+set "choice="
+echo OfflineInsiderEnroll v%scriptver%
+echo.
+echo 1 - %m1% Dev Channel
+echo 2 - %m1% Beta Channel
+echo 3 - %m1% Release Preview Channel
+echo.
+echo 4 - %m2%
+echo 5 - %m3%
+echo.
+choice /C:12345 /N /M "%mch% [1,2,3,4,5] : "
+if errorlevel 5 goto:EOF
+if errorlevel 4 goto:STOP_INSIDER
+if errorlevel 3 goto:ENROLL_RP
+if errorlevel 2 goto:ENROLL_BETA
+if errorlevel 1 goto:ENROLL_DEV
+
+:ENROLL_RP
+set "Channel=ReleasePreview"
+set "Fancy=Release Preview Channel"
+set "BRL=8"
+set "Content=Mainline"
+set "Ring=External"
+set "RID=11"
+set "actived=false"
+set "activeb=false"
+set "activerp=true"
+goto :ENROLL
+
+:ENROLL_BETA
+set "Channel=Beta"
+set "Fancy=Beta Channel"
+set "BRL=4"
+set "Content=Mainline"
+set "Ring=External"
+set "RID=11"
+set "actived=false"
+set "activeb=true"
+set "activerp=false"
+goto :ENROLL
+
+:ENROLL_DEV
+set "Channel=Dev"
+set "Fancy=Dev Channel"
+set "BRL=2"
+set "Content=Mainline"
+set "Ring=External"
+set "RID=11"
+set "actived=true"
+set "activeb=false"
+set "activerp=false"
+goto :ENROLL
+
+:RESET_INSIDER_CONFIG
+reg delete "%WSH%\Account" /f
+reg delete "%WSH%\Applicability" /f
+reg delete "%WSH%\Cache" /f
+reg delete "%WSH%\UI" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\WUMUDCat" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\Ring%Ring%" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\RingExternal" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\RingPreview" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\RingInsiderSlow" /f
+reg delete "%cver%\WindowsUpdate\SLS\Programs\RingInsiderFast" /f
+reg delete "%cver%\Policies\DataCollection" /f /v AllowTelemetry
+reg delete "%cver%\DataCollection" /f /v AllowTelemetry
+reg delete "%cver%\WindowsUpdate" /f /v BranchReadinessLevel
+goto :EOF
+
+:ADD_INSIDER_CONFIG
+reg add "%cver%\WindowsUpdate\Orchestrator" /f /t REG_DWORD /v EnableUUPScan /d 1
+reg add "%cver%\WindowsUpdate\SLS\Programs\Ring%Ring%" /f /t REG_DWORD /v Enabled /d 1
+reg add "%cver%\WindowsUpdate\SLS\Programs\WUMUDCat" /f /t REG_DWORD /v WUMUDCATEnabled /d 1
+reg add "%cver%\Policies\DataCollection" /f /t REG_DWORD /v AllowTelemetry /d 3
+if defined BRL reg add "%cver%\WindowsUpdate" /f /t REG_DWORD /v BranchReadinessLevel /d %BRL%
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v EnablePreviewBuilds /d 2
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v IsBuildFlightingEnabled /d 1
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v IsConfigSettingsFlightingEnabled /d 1
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v IsConfigExpFlightingEnabled /d 0
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v TestFlags /d 32
+reg add "%WSH%\Applicability" /f /t REG_DWORD /v RingId /d %RID%
+reg add "%WSH%\Applicability" /f /t REG_SZ /v Ring /d "%Ring%"
+reg add "%WSH%\Applicability" /f /t REG_SZ /v ContentType /d "%Content%"
+reg add "%WSH%\Applicability" /f /t REG_SZ /v BranchName /d "%Channel%"
+reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIRing /d "%Ring%"
+reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIContentType /d "%Content%"
+reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIBranch /d "%Channel%"
+reg add "%WSH%\UI\Visibility" /f /t REG_DWORD /v UIHiddenElements_Rejuv /d 65508
+reg add "%WSH%\UI\Visibility" /f /t REG_DWORD /v UIDisabledElements_Rejuv /d 65517
+reg add "%WSH%\Cache" /f /t REG_SZ /v "ConfigurationOptionList" /d "{\"ConfigurationOptionList\":[{\"Name\":\"Dev\",\"Alias\":\"Dev Channel\",\"Description\":\"%cdevdesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Dev\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%actived%,\"Title\":\"Dev\",\"Warning\":\"%cdevwar%\"},{\"Name\":\"Beta\",\"Alias\":\"Beta Channel (Recommended)\",\"Description\":\"%cbetadesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Beta\",\"Ring\":\"External\",\"IsRecommended\":true,\"RecommendedOnly\":false,\"IsValid\":%activeb%,\"Title\":\"Beta\",\"Warning\":\"\"},{\"Name\":\"ReleasePreview\",\"Alias\":\"Release Preview Channel\",\"Description\":\"%crpdesk%\",\"ContentType\":\"Mainline\",\"Branch\":\"ReleasePreview\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%activerp%,\"Title\":\"Release Preview\",\"Warning\":\"\"}]}"
+reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "AccountText" /d "{\"Description\":\"%acdesc%\",\"Title\":\"%actitle%\",\"ButtonTitle\":\"%acbutton%\"}"
+reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "DeviceStatusBarText" /d "{\"Subtitle\":\"%dsdesk% %build:~5% %br% \",\"LinkTitle\":\"%dsltitle%\",\"LinkUrl\":\"https://aka.ms/%Channel%Latest\",\"ButtonUrl\":\"feedback-hub://\",\"Status\":1,\"Title\":\"%dstitle%\",\"ButtonTitle\":\"%dsbutton%\"}"
+reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "ConfigurationExpanderText_Rejuv" /d "{\"Title\":\"%conftitle%\",\"RelatedLinkText\":\"%confrlink%\",\"RelatedLinkUrl\":\"https://github.com/nondetect/offlineinsiderenroll/releases\"}"
+reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "UnenrollText_Rejuv" /d "{\"Status\":\"\",\"ToggleTitle\":\"%unrtogtitle%\",\"ToggleDescription\":\"%unrtogdesk%\",\"LinkTitle\":\"%unrlinktitle%\",\"LinkDescription\":\"%unrlinkdesk%\",\"LinkUrl\":\"https://go.microsoft.com/fwlink/?linkid=2136438\",\"Title\":\"%unrtitle%\",\"RelatedLinkText\":\"%unrreltext%\",\"RelatedLinkUrl\":\"https://insider.windows.com/leave-program\"}"
+if %build:~5,5% LSS 21990 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost\UI\Strings" /f /t REG_SZ /v StickyXaml /d "<StackPanel xmlns="^""http://schemas.microsoft.com/winfx/2006/xaml/presentation"^""><TextBlock Margin="^""0,-25,0,0"^"" Style="^""{StaticResource BodyTextBlockStyle}"^"">%mdesc% v%scriptver%.</TextBlock><TextBlock Style="^""{StaticResource SubtitleTextBlockStyle}"^""><Run FontFamily="^""Segoe Fluent Icons"^"">&#xE9D9;</Run> <Span FontWeight="^""SemiBold"^"">%mnottitle%</Span></TextBlock><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^"">%mnotdesk1% <Span FontWeight="^""SemiBold"^"">%mnotdesk2%</Span>%mnotdesk3% <Span FontWeight="^""SemiBold"^"">%mnotdesk4%</Span>.</TextBlock><Button Command="^""{StaticResource ActivateUriCommand}"^"" CommandParameter="^""ms-settings:privacy-feedback"^"" Margin="^""0,10,0,0"^""><TextBlock Margin="^""5,0,5,0"^"">%mnotbutton%</TextBlock></Button></StackPanel>"
+chcp 1251 >nul
+if %build:~5,5% LSS 21990 goto :EOF
+(
+echo Windows Registry Editor Version 5.00
+echo.
+echo [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost\UI\Strings]
+echo "StickyMessage"="{\"Message\":\"%mtitle%\",\"LinkTitle\":\"\",\"LinkUrl\":\"\",\"DynamicXaml\":\"^<StackPanel xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\"^>^<TextBlock Margin=\\\"0,-25,0,10\\\" Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mdesc% v%scriptver%.^</TextBlock^>^<TextBlock Style=\\\"{StaticResource SubtitleTextBlockStyle }\\\" ^>^<Run FontFamily=\\\"Segoe Fluent Icons\\\"^>^&#xE9D9;^</Run^> ^<Span FontWeight=\\\"SemiBold\\\"^>%mnottitle%^</Span^>^</TextBlock^>^<TextBlock Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mnotdesk1% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk2%^</Span^>%mnotdesk3% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk4%^</Span^>.^</TextBlock^>^<Button Command=\\\"{StaticResource ActivateUriCommand}\\\" CommandParameter=\\\"ms-settings:privacy-feedback\\\" Margin=\\\"0,10,0,0\\\"^>^<TextBlock Margin=\\\"5,0,5,0\\\"^>%mnotbutton%^</TextBlock^>^</Button^>^</StackPanel^>\",\"Severity\":0}"
+echo.
+)>"%Temp%\oie.reg"
+regedit /s "%Temp%\oie.reg"
+del /f /q "%Temp%\oie.reg"
+goto :EOF
+
+:ENROLL
+echo %apc%
+call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
+call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
+bcdedit /set {current} flightsigning yes >nul 2>&1
+echo %apd%
+echo.
+if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT
+echo %pte%
+pause >nul
+goto :EOF
+
+:STOP_INSIDER
+echo %apc%
+call :RESET_INSIDER_CONFIG 1>nul 2>nul
+bcdedit /deletevalue {current} flightsigning >nul 2>&1
+echo %apd%
+echo.
+if %FlightSigningEnabled% neq 0 goto :ASK_FOR_REBOOT
+echo %pte%
+pause >nul
+goto :EOF
+
+:ASK_FOR_REBOOT
+set "choice="
+echo %rtitle%
+set /p choice="%rdesk% "
+if /I "%choice%"=="y" shutdown -r -t 0
+goto :EOF
+
 :RU_LOCALE
 echo %lang% in ru
-set "chadmin=ÐÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ð¾ Ð·Ð°Ð¿ÑƒÑÐºÐ°Ñ‚ÑŒ Ð¾Ñ‚ Ð¸Ð¼ÐµÐ½Ð¸ ÐÐ´Ð¼Ð¸Ð½Ð¸ÑÑ‚Ñ€Ð°Ñ‚Ð¾Ñ€Ð°"
-set "chbuild1=Ð’Ð°ÑˆÐ° Ñ‚ÐµÐºÑƒÑ‰Ð°Ñ ÑÐ±Ð¾Ñ€ÐºÐ°"
-set "chbuild2=Ð”Ð»Ñ Ñ€Ð°Ð±Ð¾Ñ‚Ñ‹ ÑÐºÑ€Ð¸Ð¿Ñ‚Ð° Ð½ÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ð° Ð²ÐµÑÐ¸Ñ Windows 10 v1809 ÑÐ±Ð¾Ñ€ÐºÐ° 17763 Ð¸Ð»Ð¸ Ð²Ñ‹ÑˆÐµ"
-set "m1=ÐŸÐµÑ€ÐµÐ¹Ñ‚Ð¸ Ð½Ð°"
-set "m2=ÐŸÑ€ÐµÐºÑ€Ð°Ñ‚Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð˜Ð½ÑÐ°Ð¹Ð´ÐµÑ€ÑÐºÐ¸Ñ… ÑÐ±Ð¾Ñ€Ð¾Ðº"
-set "m3=Ð’Ñ‹Ñ…Ð¾Ð´ Ð±ÐµÐ· Ð²Ð½ÐµÑÐµÐ½Ð¸Ñ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ð¹"
-set "mch=Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ ÑÐ²Ð¾Ð¹ Ð²Ñ‹Ð±Ð¾Ñ€"
-set "apc=ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ð¹..."
-set "apd=Ð“Ð¾Ñ‚Ð¾Ð²Ð¾"
-set "rtitle=ÐÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ð° Ð¿ÐµÑ€ÐµÐ·Ð°Ð³Ñ€ÑƒÐ·ÐºÐ° Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð²ÑÑ‚ÑƒÐ¿Ð¸Ð»Ð¸ Ð² ÑÐ¸Ð»Ñƒ"
-set "rdesk=Ð¥Ð¾Ñ‚Ð¸Ñ‚Ðµ Ð¿ÐµÑ€ÐµÐ·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ ÐºÐ¾Ð¼Ð¿ÑŒÑŽÑ‚ÐµÑ€"
-set "actitle=Ð£Ñ‡ÐµÑ‚Ð½Ð°Ñ Ð·Ð°Ð¿Ð¸ÑÑŒ ÑƒÑ‡Ð°ÑÑ‚Ð½Ð¸ÐºÐ° Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ñ‹ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸ Windows"
-set "acdesc=ÐÐµÑ‚ Ð¿Ñ€Ð¸Ð²ÑÐ·Ð°Ð½Ð½Ð¾Ð¹ ÑƒÑ‡Ñ‘Ñ‚Ð½Ð¾Ð¹ Ð·Ð°Ð¿Ð¸ÑÐ¸"
-set "acbutton=Ð˜Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ"
-set "cdevdesc=Ð˜Ð´ÐµÐ°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾Ð´Ñ…Ð¾Ð´Ð¸Ñ‚ Ð´Ð»Ñ Ñ‚ÐµÑ…Ð½Ð¸Ñ‡ÐµÑÐºÐ¸ Ð¿Ð¾Ð´ÐºÐ¾Ð²Ð°Ð½Ð½Ñ‹Ñ… Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»ÐµÐ¹. ÐŸÐµÑ€Ð²Ñ‹Ð¼Ð¸ Ð¿Ð¾Ð»ÑƒÑ‡Ð°Ð¹Ñ‚Ðµ Ð´Ð¾ÑÑ‚ÑƒÐ¿ Ðº Ð½Ð¾Ð²ÐµÐ¹ÑˆÐ¸Ð¼ ÑÐ±Ð¾Ñ€ÐºÐ°Ð¼ Windows 11 Ð½Ð° ÑÐ°Ð¼Ð¾Ð¼ Ñ€Ð°Ð½Ð½ÐµÐ¼ ÑÑ‚Ð°Ð¿Ðµ Ñ†Ð¸ÐºÐ»Ð° Ñ€Ð°Ð·Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ¸ Ñ Ð½Ð¾Ð²ÐµÐ¹ÑˆÐ¸Ð¼ ÐºÐ¾Ð´Ð¾Ð¼. Ð’Ñ‹ Ð·Ð°Ð¼ÐµÑ‚Ð¸Ñ‚Ðµ Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ ÑˆÐµÑ€Ð¾Ñ…Ð¾Ð²Ð°Ñ‚Ð¾ÑÑ‚Ð¸ Ð¸ Ð½Ð¸Ð·ÐºÑƒÑŽ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒ."
-set "cdevwar=ÐœÑ‹ Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´ÑƒÐµÐ¼ Dev Channel Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² Ñ‚Ð¾Ð¼ ÑÐ»ÑƒÑ‡Ð°Ðµ, ÐµÑÐ»Ð¸ Ð²Ñ‹ Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÑÐµÑ‚Ðµ Ñ€ÐµÐ·ÐµÑ€Ð²Ð½Ð¾Ðµ ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¸ Ð²Ð°Ð¼ ÐºÐ¾Ð¼Ñ„Ð¾Ñ€Ñ‚Ð½Ð¾ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÑÑ‚ÑŒ Ñ‡Ð¸ÑÑ‚ÑƒÑŽ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÑƒ Windows. Ð­Ñ‚Ð¾Ñ‚ ÐºÐ°Ð½Ð°Ð» Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÐ±Ð¾Ñ€ÐºÐ¸, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð¸Ð¼ÐµÑŽÑ‚ Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ ÑˆÐµÑ€Ð¾Ñ…Ð¾Ð²Ð°Ñ‚Ð¾ÑÑ‚Ð¸ Ð¸ Ð¼Ð¾Ð³ÑƒÑ‚ Ð±Ñ‹Ñ‚ÑŒ Ð½ÐµÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ð¼Ð¸. ÐŸÐ¾ÑÐ»Ðµ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ ÑÐ±Ð¾Ñ€ÐºÐ¸ Ð¸Ð· Dev Channel ÐµÐ´Ð¸Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ð¹ ÑÐ¿Ð¾ÑÐ¾Ð± Ð¿ÐµÑ€ÐµÐ¹Ñ‚Ð¸ Ð½Ð° Ð´Ñ€ÑƒÐ³Ð¾Ð¹ ÐºÐ°Ð½Ð°Ð» Ð¸Ð»Ð¸ Ð¾Ñ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð°Ñ†Ð¸ÑŽ ÑÑ‚Ð¾Ð³Ð¾ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð° - ÑÑ‚Ð¾ Ð²Ñ‹Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÑŒ Ñ‡Ð¸ÑÑ‚ÑƒÑŽ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÑƒ Windows. Ð’Ð°Ð¼ Ð½ÑƒÐ¶Ð½Ð¾ Ð±ÑƒÐ´ÐµÑ‚ Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ Ñ€ÐµÐ·ÐµÑ€Ð²Ð½ÑƒÑŽ ÐºÐ¾Ð¿Ð¸ÑŽ Ð¸ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð²ÑÐµ Ð´Ð°Ð½Ð½Ñ‹Ðµ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð²Ñ‹ Ñ…Ð¾Ñ‚Ð¸Ñ‚Ðµ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ."
-set "cbetadesc=Ð˜Ð´ÐµÐ°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾Ð´Ñ…Ð¾Ð´Ð¸Ñ‚ Ð´Ð»Ñ Ñ€Ð°Ð½Ð½Ð¸Ñ… Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÐµÐ¹. Ð­Ñ‚Ð¸ ÑÐ±Ð¾Ñ€ÐºÐ¸ Windows 11 Ð±Ð¾Ð»ÐµÐµ Ð½Ð°Ð´ÐµÐ¶Ð½Ñ‹, Ñ‡ÐµÐ¼ ÑÐ±Ð¾Ñ€ÐºÐ¸ Ð¸Ð· ÐºÐ°Ð½Ð°Ð»Ð° Dev, Ð±Ð»Ð°Ð³Ð¾Ð´Ð°Ñ€Ñ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸ÑÐ¼, Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼Ñ‹Ð¼ ÐºÐ¾Ñ€Ð¿Ð¾Ñ€Ð°Ñ†Ð¸ÐµÐ¹ ÐœÐ°Ð¹ÐºÑ€Ð¾ÑÐ¾Ñ„Ñ‚. Ð’Ð°Ñˆ Ð¾Ñ‚Ð·Ñ‹Ð² Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Ð·Ð½Ð°Ñ‡Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ðµ Ð²Ð¾Ð·Ð´ÐµÐ¹ÑÑ‚Ð²Ð¸Ðµ."
-set "crpdesk=Ð˜Ð´ÐµÐ°Ð»ÑŒÐ½Ð¾ Ð¿Ð¾Ð´Ñ…Ð¾Ð´Ð¸Ñ‚, ÐµÑÐ»Ð¸ Ð²Ñ‹ Ñ…Ð¾Ñ‚Ð¸Ñ‚Ðµ Ð¾Ð·Ð½Ð°ÐºÐ¾Ð¼Ð¸Ñ‚ÑŒÑÑ Ñ Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸ÑÐ¼Ð¸ Ð¸ Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¼Ð¸ ÐºÐ»ÑŽÑ‡ÐµÐ²Ñ‹Ð¼Ð¸ Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑÐ¼Ð¸, Ð° Ñ‚Ð°ÐºÐ¶Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ Ð²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð° Ðº ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ¹ Ð²ÐµÑ€ÑÐ¸Ð¸ Windows 10, Ð¿Ñ€ÐµÐ¶Ð´Ðµ Ñ‡ÐµÐ¼ Ð¾Ð½Ð° ÑÑ‚Ð°Ð½ÐµÑ‚ Ð¾Ð±Ñ‰ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾Ð¹ Ð´Ð»Ñ Ð²ÑÐµÐ³Ð¾ Ð¼Ð¸Ñ€Ð°. Ð­Ñ‚Ð¾Ñ‚ ÐºÐ°Ð½Ð°Ð» Ñ‚Ð°ÐºÐ¶Ðµ Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´ÑƒÐµÑ‚ÑÑ Ð´Ð»Ñ ÐºÐ¾Ð¼Ð¼ÐµÑ€Ñ‡ÐµÑÐºÐ¸Ñ… Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»ÐµÐ¹."
-set "dstitle=ÐÐ° Ð²Ð°ÑˆÐµÐ¼ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ðµ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð° Ð½Ð¾Ð²ÐµÐ¹ÑˆÐ°Ñ Ð²ÐµÑ€ÑÐ¸Ñ ÑÐ±Ð¾Ñ€ÐºÐ¸"
-set "dsdesk=Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð° ÑÐ±Ð¾Ñ€ÐºÐ°:"
-set "dsltitle=ÐŸÐ¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð² ÑÐ±Ð¾Ñ€ÐºÐµ"
-set "dsbutton=ÐžÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ Ð¾Ñ‚Ð·Ñ‹Ð²"
-set "conftitle=ÐŸÐ¾ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ Ñ‚ÐµÐºÑƒÑ‰Ð¸Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ñ‹ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸"
-set "confrlink=Ð•ÑÐ»Ð¸ Ñ…Ð¾Ñ‚Ð¸Ñ‚Ðµ Ð¸Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Windows Insider Ð¸Ð»Ð¸ Ð¿Ñ€ÐµÐºÑ€Ð°Ñ‚Ð¸Ñ‚ÑŒ ÑƒÑ‡Ð°ÑÑ‚Ð¸Ðµ, Ð¿Ð¾Ð¶Ð°Ð»ÑƒÐ¹ÑÑ‚Ð° Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐ¹Ñ‚Ðµ ÑÐºÑ€Ð¸Ð¿Ñ‚"
-set "mtitle=Ð£ÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾ Ð·Ð°Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾ Ñ Ð¿Ð¾Ð¼Ð¾Ñ‰ÑŒ OfflineInsiderEnroll"
-set "mdesc=Ð­Ñ‚Ð¾ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾ Ð±Ñ‹Ð»Ð¾ Ð·Ð°Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾ Ð² Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ðµ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸ Windows Ñ Ð¿Ð¾Ð¼Ð¾Ñ‰ÑŒÑŽ OfflineInsiderEnroll"
-set "mnottitle=Ð£Ð²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð¾ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°Ñ… Ñ‚ÐµÐ»ÐµÐ¼ÐµÑ‚Ñ€Ð¸Ð¸"
-set "mnotdesk1=ÐŸÑ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ð° Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸ Windows Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð² Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°Ñ… ÑÐ±Ð¾Ñ€Ð° Ð´Ð¸Ð°Ð³Ð½Ð¾ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð±Ñ‹Ð»Ð° Ð²ÐºÐ»ÑŽÑ‡ÐµÐ½Ð°"
-set "mnotdesk2=ÐžÑ‚Ð¿Ñ€Ð°Ð²ÐºÐ° Ð½ÐµÐ¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ñ… Ð´Ð¸Ð°Ð³Ð½Ð¾ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…."
-set "mnotdesk3=Ð’Ñ‹ Ð¼Ð¾Ð¶ÐµÑ‚Ðµ Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ð¸Ð»Ð¸ Ð¸Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ ÑÐ²Ð¾Ð¸ Ñ‚ÐµÐºÑƒÑ‰Ð¸Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ Ð²"
-set "mnotdesk4=Ð”Ð¸Ð°Ð³Ð½Ð¾ÑÑ‚Ð¸ÐºÐ° Ð¸ Ð¾Ñ‚Ð·Ñ‹Ð²Ñ‹"
-set "mnotbutton=ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð”Ð¸Ð°Ð³Ð½Ð¾ÑÑ‚Ð¸ÐºÐ° Ð¸ Ð¾Ñ‚Ð·Ñ‹Ð²Ñ‹"
-set "unrtitle=ÐŸÑ€ÐµÐºÑ€Ð°Ñ‚Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ñ… ÑÐ±Ð¾Ñ€Ð¾Ðº"
-set "unrtogtitle=ÐžÑ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð°Ñ†Ð¸ÑŽ ÑÑ‚Ð¾Ð³Ð¾ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð° Ð¿Ð¾ÑÐ»Ðµ Ð²Ñ‹Ñ…Ð¾Ð´Ð° ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ¹ Ð²ÐµÑ€ÑÐ¸Ð¸ Windows"
-set "unrtogdesk=Ð”Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾ Ð´Ð»Ñ ÐºÐ°Ð½Ð°Ð»Ð¾Ð² Ð±ÐµÑ‚Ð°-Ð²ÐµÑ€ÑÐ¸Ð¸ Ð¸ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð³Ð¾ Ð²Ñ‹Ð¿ÑƒÑÐºÐ°. Ð’ÐºÐ»ÑŽÑ‡Ð¸Ñ‚Ðµ ÑÑ‚Ð¾Ñ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿Ñ€ÐµÐºÑ€Ð°Ñ‚Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ñ… ÑÐ±Ð¾Ñ€Ð¾Ðº Ð¿Ð¾ÑÐ»Ðµ Ð·Ð°Ð¿ÑƒÑÐºÐ° ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ³Ð¾ Ð¾Ð±Ñ‰ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾Ð³Ð¾ Ð¾ÑÐ½Ð¾Ð²Ð½Ð¾Ð³Ð¾ Ð²Ñ‹Ð¿ÑƒÑÐºÐ° Windows. Ð”Ð¾ ÑÑ‚Ð¾Ð³Ð¾ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ð° Ð²Ð°ÑˆÐµ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾ Ð±ÑƒÐ´ÐµÑ‚ Ð¿Ð¾Ð»ÑƒÑ‡Ð°Ñ‚ÑŒ ÑÐ±Ð¾Ñ€ÐºÐ¸ Ð´Ð»Ñ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿Ð¾Ð´Ð´ÐµÑ€Ð¶Ð¸Ð²Ð°Ñ‚ÑŒ ÐµÐ³Ð¾ Ð±ÐµÐ·Ð¾Ð¿Ð°ÑÐ½Ð¾ÑÑ‚ÑŒ. Ð’ÑÐµ Ð²Ð°ÑˆÐ¸ Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ñ, Ð´Ñ€Ð°Ð¹Ð²ÐµÑ€Ñ‹ Ð¸ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð±ÑƒÐ´ÑƒÑ‚ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ñ‹ Ð´Ð°Ð¶Ðµ Ð¿Ð¾ÑÐ»Ðµ Ñ‚Ð¾Ð³Ð¾, ÐºÐ°Ðº Ð²Ñ‹ Ð¿ÐµÑ€ÐµÑÑ‚Ð°Ð½ÐµÑ‚Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð°Ñ‚ÑŒ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ ÑÐ±Ð¾Ñ€ÐºÐ¸."
-set "unrlinktitle=Ð‘Ñ‹ÑÑ‚Ñ€Ð°Ñ Ð¾Ñ‚Ð¼ÐµÐ½Ð° Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð°Ñ†Ð¸Ð¸ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð°"
-set "unrlinkdesk=Ð§Ñ‚Ð¾Ð±Ñ‹ Ð¿Ñ€ÐµÐºÑ€Ð°Ñ‚Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ðµ ÑÐ±Ð¾Ñ€Ð¾Ðº Insider Preview Ð½Ð° ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ðµ, Ð²Ñ‹Ð¿Ð¾Ð»Ð½Ð¸Ñ‚Ðµ Ñ‡Ð¸ÑÑ‚ÑƒÑŽ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÑƒ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ¹ Ð²ÐµÑ€ÑÐ¸Ð¸ Windows 10. ÐŸÑ€Ð¸Ð¼ÐµÑ‡Ð°Ð½Ð¸Ðµ. ÐŸÑ€Ð¸ ÑÑ‚Ð¾Ð¼ Ð±ÑƒÐ´ÑƒÑ‚ ÑƒÐ´Ð°Ð»ÐµÐ½Ñ‹ Ð²ÑÐµ Ð²Ð°ÑˆÐ¸ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¸ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð° ÑÐ²ÐµÐ¶Ð°Ñ ÐºÐ¾Ð¿Ð¸Ñ Windows 10."
-set "unrreltext=Ð’Ñ‹Ñ…Ð¾Ð´ Ð¸Ð· Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ñ‹ Ð¿Ñ€ÐµÐ´Ð²Ð°Ñ€Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ð¾Ñ†ÐµÐ½ÐºÐ¸ Windows"
+set "chadmin=¥®¡å®¤¨¬® § ¯ãáª âì ®â ¨¬¥­¨ €¤¬¨­¨áâà â®à "
+set "chbuild1=‚ è  â¥ªãé ï á¡®àª "
+set "chbuild2=„«ï à ¡®âë áªà¨¯â  ­¥®¡å®¤¨¬  ¢¥á¨ï Windows 10 v1809 á¡®àª  17763 ¨«¨ ¢ëè¥"
+set "m1=¥à¥©â¨ ­ "
+set "m2=à¥ªà â¨âì ¯®«ãç¥­¨¥ ˆ­á ©¤¥àáª¨å á¡®à®ª"
+set "m3=‚ëå®¤ ¡¥§ ¢­¥á¥­¨ï ¨§¬¥­¥­¨©"
+set "mch=‚¢¥¤¨â¥ á¢®© ¢ë¡®à"
+set "apc=à¨¬¥­¥­¨¥ ¨§¬¥­¥­¨©..."
+set "apd=ƒ®â®¢®"
+set "pte= ¦¬¨â¥ «î¡ãî ª­®¯ªã ¤«ï ¢ëå®¤ "
+set "rtitle=¥®¡å®¤¨¬  ¯¥à¥§ £àã§ª  çâ®¡ë ¨§¬¥­¥­¨ï ¢áâã¯¨«¨ ¢ á¨«ã"
+set "rdesk=•®â¨â¥ ¯¥à¥§ £àã§¨âì ª®¬¯ìîâ¥à"
+set "actitle=“ç¥â­ ï § ¯¨áì ãç áâ­¨ª  ¯à®£à ¬¬ë ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨ Windows"
+set "acdesc=¥â ¯à¨¢ï§ ­­®© ãçñâ­®© § ¯¨á¨"
+set "acbutton=ˆ§¬¥­¨âì"
+set "cdevdesc=ˆ¤¥ «ì­® ¯®¤å®¤¨â ¤«ï â¥å­¨ç¥áª¨ ¯®¤ª®¢ ­­ëå ¯®«ì§®¢ â¥«¥©. ¥à¢ë¬¨ ¯®«ãç ©â¥ ¤®áâã¯ ª ­®¢¥©è¨¬ á¡®àª ¬ Windows 11 ­  á ¬®¬ à ­­¥¬ íâ ¯¥ æ¨ª«  à §à ¡®âª¨ á ­®¢¥©è¨¬ ª®¤®¬. ‚ë § ¬¥â¨â¥ ­¥ª®â®àë¥ è¥à®å®¢ â®áâ¨ ¨ ­¨§ªãî áâ ¡¨«ì­®áâì."
+set "cdevwar=Œë à¥ª®¬¥­¤ã¥¬ Dev Channel â®«ìª® ¢ â®¬ á«ãç ¥, ¥á«¨ ¢ë  ªâ¨¢­® ¢ë¯®«­ï¥â¥ à¥§¥à¢­®¥ ª®¯¨à®¢ ­¨¥ ¤ ­­ëå ¨ ¢ ¬ ª®¬ä®àâ­® ¢ë¯®«­ïâì ç¨áâãî ãáâ ­®¢ªã Windows. â®â ª ­ « ¯®«ãç ¥â á¡®àª¨, ª®â®àë¥ ¨¬¥îâ ­¥ª®â®àë¥ è¥à®å®¢ â®áâ¨ ¨ ¬®£ãâ ¡ëâì ­¥áâ ¡¨«ì­ë¬¨. ®á«¥ ãáâ ­®¢ª¨ á¡®àª¨ ¨§ Dev Channel ¥¤¨­áâ¢¥­­ë© á¯®á®¡ ¯¥à¥©â¨ ­  ¤àã£®© ª ­ « ¨«¨ ®â¬¥­¨âì à¥£¨áâà æ¨î íâ®£® ãáâà®©áâ¢  - íâ® ¢ë¯®«­¨âì ç¨áâãî ãáâ ­®¢ªã Windows. ‚ ¬ ­ã¦­® ¡ã¤¥â ¢àãç­ãî á®§¤ âì à¥§¥à¢­ãî ª®¯¨î ¨ ¢®ááâ ­®¢¨âì ¢á¥ ¤ ­­ë¥, ª®â®àë¥ ¢ë å®â¨â¥ á®åà ­¨âì."
+set "cbetadesc=ˆ¤¥ «ì­® ¯®¤å®¤¨â ¤«ï à ­­¨å ¯®á«¥¤®¢ â¥«¥©. â¨ á¡®àª¨ Windows 11 ¡®«¥¥ ­ ¤¥¦­ë, ç¥¬ á¡®àª¨ ¨§ ª ­ «  Dev, ¡« £®¤ àï ®¡­®¢«¥­¨ï¬, ¯à®¢¥àï¥¬ë¬ ª®à¯®à æ¨¥© Œ ©ªà®á®äâ. ‚ è ®â§ë¢ ®ª §ë¢ ¥â §­ ç¨â¥«ì­®¥ ¢®§¤¥©áâ¢¨¥."
+set "crpdesk=ˆ¤¥ «ì­® ¯®¤å®¤¨â, ¥á«¨ ¢ë å®â¨â¥ ®§­ ª®¬¨âìáï á ¨á¯à ¢«¥­¨ï¬¨ ¨ ­¥ª®â®àë¬¨ ª«îç¥¢ë¬¨ äã­ªæ¨ï¬¨,   â ª¦¥ ¯®«ãç¨âì ¢®§¬®¦­®áâì ¤®áâã¯  ª á«¥¤ãîé¥© ¢¥àá¨¨ Windows 10, ¯à¥¦¤¥ ç¥¬ ®­  áâ ­¥â ®¡é¥¤®áâã¯­®© ¤«ï ¢á¥£® ¬¨à . â®â ª ­ « â ª¦¥ à¥ª®¬¥­¤ã¥âáï ¤«ï ª®¬¬¥àç¥áª¨å ¯®«ì§®¢ â¥«¥©."
+set "dstitle=  ¢ è¥¬ ãáâà®©áâ¢¥ ãáâ ­®¢«¥­  ­®¢¥©è ï ¢¥àá¨ï á¡®àª¨"
+set "dsdesk=“áâ ­®¢«¥­  á¡®àª :"
+set "dsltitle=®á«¥¤­¨¥ ¨§¬¥­¥­¨ï ¢ á¡®àª¥"
+set "dsbutton=Žáâ ¢¨âì ®â§ë¢"
+set "conftitle=®á¬®âà¥âì â¥ªãé¨¥ ¯ à ¬¥âàë ¯à®£à ¬¬ë ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨"
+set "confrlink=…á«¨ å®â¨â¥ ¨§¬¥­¨âì ­ áâà®©ª¨ Windows Insider ¨«¨ ¯à¥ªà â¨âì ãç áâ¨¥, ¯®¦ «ã©áâ  ¨á¯®«ì§ã©â¥ áªà¨¯â"
+set "mtitle=“áâà®©áâ¢® § à¥£¨áâà¨à®¢ ­® á ¯®¬®éì OfflineInsiderEnroll"
+set "mdesc=â® ãáâà®©áâ¢® ¡ë«® § à¥£¨áâà¨à®¢ ­® ¢ ¯à®£à ¬¬¥ ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨ Windows á ¯®¬®éìî OfflineInsiderEnroll"
+set "mnottitle=“¢¥¤®¬«¥­¨¥ ® ­ áâà®©ª å â¥«¥¬¥âà¨¨"
+set "mnotdesk1=à®£à ¬¬  ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨ Windows âà¥¡ã¥â, çâ®¡ë ¢ ­ áâà®©ª å á¡®à  ¤¨ £­®áâ¨ç¥áª¨å ¤ ­­ëå ¡ë«  ¢ª«îç¥­ "
+set "mnotdesk2=Žâ¯à ¢ª  ­¥®¡ï§ â¥«ì­ëå ¤¨ £­®áâ¨ç¥áª¨å ¤ ­­ëå."
+set "mnotdesk3=‚ë ¬®¦¥â¥ ¯à®¢¥à¨âì ¨«¨ ¨§¬¥­¨âì á¢®¨ â¥ªãé¨¥ ­ áâà®©ª¨ ¢"
+set "mnotdesk4=„¨ £­®áâ¨ª  ¨ ®â§ë¢ë"
+set "mnotbutton=Žâªàëâì „¨ £­®áâ¨ª  ¨ ®â§ë¢ë"
+set "unrtitle=à¥ªà â¨âì ¯®«ãç¥­¨¥ ¯à¥¤¢ à¨â¥«ì­ëå á¡®à®ª"
+set "unrtogtitle=Žâ¬¥­¨âì à¥£¨áâà æ¨î íâ®£® ãáâà®©áâ¢  ¯®á«¥ ¢ëå®¤  á«¥¤ãîé¥© ¢¥àá¨¨ Windows"
+set "unrtogdesk=„®áâã¯­® ¤«ï ª ­ «®¢ ¡¥â -¢¥àá¨¨ ¨ ¯à¥¤¢ à¨â¥«ì­®£® ¢ë¯ãáª . ‚ª«îç¨â¥ íâ®â ¯ à ¬¥âà, çâ®¡ë ¯à¥ªà â¨âì ¯®«ãç¥­¨¥ ¯à¥¤¢ à¨â¥«ì­ëå á¡®à®ª ¯®á«¥ § ¯ãáª  á«¥¤ãîé¥£® ®¡é¥¤®áâã¯­®£® ®á­®¢­®£® ¢ë¯ãáª  Windows. „® íâ®£® ¬®¬¥­â  ¢ è¥ ãáâà®©áâ¢® ¡ã¤¥â ¯®«ãç âì á¡®àª¨ ¤«ï ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨, çâ®¡ë ¯®¤¤¥à¦¨¢ âì ¥£® ¡¥§®¯ á­®áâì. ‚á¥ ¢ è¨ ¯à¨«®¦¥­¨ï, ¤à ©¢¥àë ¨ ¯ à ¬¥âàë ¡ã¤ãâ á®åà ­¥­ë ¤ ¦¥ ¯®á«¥ â®£®, ª ª ¢ë ¯¥à¥áâ ­¥â¥ ¯®«ãç âì ¯à¥¤¢ à¨â¥«ì­ë¥ á¡®àª¨."
+set "unrlinktitle=ëáâà ï ®â¬¥­  à¥£¨áâà æ¨¨ ãáâà®©áâ¢ "
+set "unrlinkdesk=—â®¡ë ¯à¥ªà â¨âì ¯®«ãç¥­¨¥ á¡®à®ª Insider Preview ­  ãáâà®©áâ¢¥, ¢ë¯®«­¨â¥ ç¨áâãî ãáâ ­®¢ªã ¯®á«¥¤­¥© ¢¥àá¨¨ Windows 10. à¨¬¥ç ­¨¥. à¨ íâ®¬ ¡ã¤ãâ ã¤ «¥­ë ¢á¥ ¢ è¨ ¤ ­­ë¥ ¨ ãáâ ­®¢«¥­  á¢¥¦ ï ª®¯¨ï Windows 10."
+set "unrreltext=‚ëå®¤ ¨§ ¯à®£à ¬¬ë ¯à¥¤¢ à¨â¥«ì­®© ®æ¥­ª¨ Windows"
 goto :CHECK_BUILD
 
 :EN_LOCALE
@@ -82,6 +228,7 @@ set "m3=Quit without making any changes"
 set "mch=Enter Your Choice"
 set "apc=Applying changes..."
 set "apd=Done"
+set "pte=Press any key to exit."
 set "rtitle=A reboot is required to finish applying changes."
 set "rdesk=Would you like to reboot your PC?"
 set "actitle=Windows Insider account"
@@ -101,10 +248,10 @@ set "mtitle=Device Enrolled using OfflineInsiderEnroll"
 set "mdesc=This device has been enrolled to the Windows Insider program using OfflineInsiderEnroll"
 set "mnottitle=Telemetry settings notice"
 set "mnotdesk1=Windows Insider Program requires diagnostic data collection to be enabled "
-set "mnotdesk2=Send optional diagnostic data. "
-set "mnotdesk3=You can verify or modify your current settings in "
-set "mnotdesk4=Diagnostics &amp; feedback"
-set "mnotbutton=Open Diagnostics &amp; feedback"
+set "mnotdesk2=Send optional diagnostic data"
+set "mnotdesk3=. You can verify or modify your current settings in "
+set "mnotdesk4=Diagnostics and feedback"
+set "mnotbutton=Open Diagnostics and feedback"
 set "unrtitle=Stop getting preview builds"
 set "unrtogtitle=Unenroll this device when the next version of Windows releases"
 set "unrtogdesk=Available for Beta and Release Preview channels. Turn this on to stop getting preview builds when the next major release of Windows launches to the public. Until then, your device will continue to get Insider builds to keep it secure. You?ll keep all your apps, drivers and settings even after you stop getting preview builds."
@@ -112,133 +259,3 @@ set "unrlinktitle=Unenroll this device immediately"
 set "unrlinkdesk=To stop getting Insider Preview builds on this device, you?ll need to clean install the latest release of Windows 10. Note: This option will erase all your data and install a fresh copy of Windows 10."
 set "unrreltext=Leaving the Insider Program"
 goto :CHECK_BUILD
-
-:START_SCRIPT
-set "scriptver=2.7.0_ml"
-set "FlightSigningEnabled=0"
-bcdedit /enum {current} | findstr /I /R /C:"^flightsigning *Yes$" >NUL 2>&1
-IF %ERRORLEVEL% EQU 0 set "FlightSigningEnabled=1"
-
-:CHOICE_MENU
-cls
-set "WSH=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost\"
-echo OfflineInsiderEnroll v%scriptver%
-echo.
-echo 1 - %m1% Dev Channel
-echo 2 - %m1% Beta Channel
-echo 3 - %m1% Release Preview Channel
-echo.
-echo 4 - %m2%
-echo 5 - %m3%
-echo.
-choice /C:12345 /N /M "%mch% [1,2,3,4,5] : "
-if errorlevel 5 goto:EOF
-if errorlevel 4 goto:STOP_INSIDER
-if errorlevel 3 goto:ENROLL_RP
-if errorlevel 2 goto:ENROLL_BETA
-if errorlevel 1 goto:ENROLL_DEV
-
-
-:ENROLL_RP
-set "Channel=ReleasePreview"
-set "Fancy=Release Preview Channel"
-set "BRL=8"
-set "actived=false"
-set "activeb=false"
-set "activerp=true"
-goto :ENROLL
-
-:ENROLL_BETA
-set "Channel=Beta"
-set "Fancy=Beta Channel"
-set "BRL=4"
-set "actived=false"
-set "activeb=true"
-set "activerp=false"
-goto :ENROLL
-
-:ENROLL_DEV
-set "Channel=Dev"
-set "Fancy=Dev Channel"
-set "BRL=2"
-set "actived=true"
-set "activeb=false"
-set "activerp=false"
-goto :ENROLL
-
-:RESET_INSIDER_CONFIG
-reg delete "%WSH%Account" /f
-reg delete "%WSH%Applicability" /f
-reg delete "%WSH%Cache" /f
-reg delete "%WSH%UI" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\WUMUDCat" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\RingExternal" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\RingPreview" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\RingInsiderSlow" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\RingInsiderFast" /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /f
-reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v BranchReadinessLevel /f
-goto :EOF
-
-:ADD_INSIDER_CONFIG
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Orchestrator" /t REG_DWORD /v EnableUUPScan /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\RingExternal" /t REG_DWORD /v Enabled /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\SLS\Programs\WUMUDCat" /t REG_DWORD /v WUMUDCATEnabled /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /t REG_DWORD /v AllowTelemetry /d 3 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /t REG_DWORD /v BranchReadinessLevel /d %BRL% /f
-reg add "%WSH%Applicability" /t REG_DWORD /v EnablePreviewBuilds /d 2 /f
-reg add "%WSH%Applicability" /t REG_DWORD /v IsBuildFlightingEnabled /d 1 /f
-reg add "%WSH%Applicability" /t REG_DWORD /v IsConfigSettingsFlightingEnabled /d 1 /f
-reg add "%WSH%Applicability" /t REG_DWORD /v TestFlags /d 32 /f
-reg add "%WSH%Applicability" /t REG_DWORD /v RingId /d 11 /f
-reg add "%WSH%Applicability" /t REG_SZ /v Ring /d "External" /f
-reg add "%WSH%Applicability" /t REG_SZ /v ContentType /d "Mainline" /f
-reg add "%WSH%Applicability" /t REG_SZ /v BranchName /d "%Channel%" /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIHiddenElements /d 65535 /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIDisabledElements /d 65535 /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIServiceDrivenElementVisibility /d 0 /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIErrorMessageVisibility /d 192 /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIHiddenElements_Rejuv /d 65508 /f
-reg add "%WSH%UI\Visibility" /t REG_DWORD /v UIDisabledElements_Rejuv /d 65517 /f
-reg add "%WSH%UI\Selection" /t REG_SZ /v UIBranch /d "%Channel%" /f
-reg add "%WSH%UI\Selection" /t REG_SZ /v UIContentType /d "Mainline" /f
-reg add "%WSH%UI\Selection" /t REG_SZ /v UIRing /d "External" /f
-reg add "%WSH%Cache" /t REG_SZ /v "ConfigurationOptionList" /d "{\"ConfigurationOptionList\":[{\"Name\":\"Dev\",\"Alias\":\"Dev Channel\",\"Description\":\"%cdevdesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Dev\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%actived%,\"Title\":\"Dev\",\"Warning\":\"%cdevwar%\"},{\"Name\":\"Beta\",\"Alias\":\"Beta Channel (Recommended)\",\"Description\":\"%cbetadesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Beta\",\"Ring\":\"External\",\"IsRecommended\":true,\"RecommendedOnly\":false,\"IsValid\":%activeb%,\"Title\":\"Beta\",\"Warning\":\"\"},{\"Name\":\"ReleasePreview\",\"Alias\":\"Release Preview Channel\",\"Description\":\"%crpdesk%\",\"ContentType\":\"Mainline\",\"Branch\":\"ReleasePreview\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%activerp%,\"Title\":\"Release Preview\",\"Warning\":\"\"}]}" /f 
-reg add "%WSH%UI\Strings" /t REG_SZ /v "AccountText" /d "{\"Description\":\"%acdesc%\",\"Title\":\"%actitle%\",\"ButtonTitle\":\"%acbutton%\"}" /f
-reg add "%WSH%UI\Strings" /t REG_SZ /v "DeviceStatusBarText" /d "{\"Subtitle\":\"%dsdesk% %build:~5% %br% \",\"LinkTitle\":\"%dsltitle%\",\"LinkUrl\":\"https://aka.ms/%Channel%Latest\",\"ButtonUrl\":\"feedback-hub://\",\"Status\":1,\"Title\":\"%dstitle%\",\"ButtonTitle\":\"%dsbutton%\"}" /f
-reg add "%WSH%UI\Strings" /t REG_SZ /v "ConfigurationExpanderText_Rejuv" /d "{\"Title\":\"%conftitle%\",\"RelatedLinkText\":\"%confrlink%\",\"RelatedLinkUrl\":\"https://github.com/abbodi1406/offlineinsiderenroll/blob/master/readme.md\"}" /f
-reg add "%WSH%UI\Strings" /t REG_SZ /v StickyMessage /d "{"^""Message"^"":"^""%mtitle%"^"","^""LinkTitle"^"":"^"""^"","^""LinkUrl"^"":"^"""^"","^""DynamicXaml"^"":"^""<StackPanel xmlns=\\"^""http://schemas.microsoft.com/winfx/2006/xaml/presentation\\"^""><TextBlock Style=\\"^""{StaticResource BodyTextBlockStyle }\\"^"" Margin=\\"^""0,-25,0,10\\"^"">%mdesc% v%scriptver%. </TextBlock><TextBlock Text=\\"^""%mnottitle%\\"^"" Margin=\\"^""0,0,0,10\\"^"" Style=\\"^""{StaticResource SubtitleTextBlockStyle}\\"^"" /><TextBlock Style=\\"^""{StaticResource BodyTextBlockStyle }\\"^"">%mnotdesk1% <Span FontWeight=\\"^""SemiBold\\"^"">%mnotdesk2%</Span> %mnotdesk3% <Span FontWeight=\\"^""SemiBold\\"^"">%mnotdesk4%</Span>.</TextBlock><Button Command=\\"^""{StaticResource ActivateUriCommand}\\"^"" CommandParameter=\\"^""ms-settings:privacy-feedback\\"^"" Margin=\\"^""0,10,0,0\\"^""><TextBlock Margin=\\"^""5,0,5,0\\"^"">%mnotbutton%</TextBlock></Button></StackPanel>"^"","^""Severity"^"":0}" /f
-if %build:~5,5% LSS 21990 reg add "%WSH%UI\Strings" /t REG_SZ /v StickyXaml /d "<StackPanel xmlns="^""http://schemas.microsoft.com/winfx/2006/xaml/presentation"^""><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^"" Margin="^""0,-25,0,10"^"">%mdesc% v%scriptver%.</TextBlock><TextBlock Text="^""%mnottitle%"^"" Margin="^""0,0,0,10"^"" Style="^""{StaticResource SubtitleTextBlockStyle}"^"" /><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^"">%mnotdesk1% <Span FontWeight="^""SemiBold"^"">%mnotdesk2%</Span> %mnotdesk3% <Span FontWeight="^""SemiBold"^"">%mnotdesk4%</Span>.</TextBlock><Button Command="^""{StaticResource ActivateUriCommand}"^"" CommandParameter="^""ms-settings:privacy-feedback"^"" Margin="^""0,10,0,0"^""><TextBlock Margin="^""5,0,5,0"^"">%mnotbutton%</TextBlock></Button></StackPanel>" /f
-reg add "%WSH%UI\Strings" /t REG_SZ /v "UnenrollText_Rejuv" /d "{\"Status\":\"\",\"ToggleTitle\":\"%unrtogtitle%\",\"ToggleDescription\":\"%unrtogdesk%\",\"LinkTitle\":\"%unrlinktitle%\",\"LinkDescription\":\"%unrlinkdesk%\",\"LinkUrl\":\"https://go.microsoft.com/fwlink/?linkid=2136438\",\"Title\":\"%unrtitle%\",\"RelatedLinkText\":\"%unrreltext%\",\"RelatedLinkUrl\":\"https://insider.windows.com/leave-program\"}" /f
-goto :EOF
-
-:ENROLL
-echo %apc%
-call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
-call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
-bcdedit /set {current} flightsigning yes >NUL 2>&1
-echo %apd%.
-
-echo.
-IF %FlightSigningEnabled% NEQ 1 goto :ASK_FOR_REBOOT
-pause
-goto :EOF
-
-:STOP_INSIDER
-echo %apc%
-call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
-bcdedit /deletevalue {current} flightsigning >NUL 2>&1
-echo %apd%.
-
-echo.
-IF %FlightSigningEnabled% NEQ 0 goto :ASK_FOR_REBOOT
-pause
-goto :EOF
-
-:ASK_FOR_REBOOT
-set "choice="
-echo %rtitle%
-set /p choice="%rdesk% (y/N): "
-if /I "%choice%"=="y" shutdown -r -t 0 
-goto :EOF
