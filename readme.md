@@ -16,9 +16,13 @@ After starting the script offers selection of *Windows Insider Program* channels
 To make a selection, press a letter coresponding to option you choose and press
 ENTER.
 
+After selecting the *Windows Insider channel*, you will be asked the question 
+*Disable compatibility check?* To make a selection, press a letter coresponding 
+to option you choose
+
 If the machine was not enrolled to the Insider Program, you will get prompted to
 restart your machine to enable *Microsoft Flight Signing* which is required by
-*Windows Insider Program*.
+*Windows Insider Program*. 
 
 **Notice:** Windows Insider Program requires telemetry to be set to *Full*.
 After enrolling your machine to the *Windows Insider Program* please make sure
