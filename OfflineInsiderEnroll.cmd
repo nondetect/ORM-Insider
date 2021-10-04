@@ -1,26 +1,35 @@
 @echo off
-set "scriptver=2.8.0"
-chcp 866
-for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
-if /I "%lang%"=="ru"  ( goto :RU_LOCALE ) else ( goto :EN_LOCALE )
+set "scriptver=2.8.5"
+chcp 866 >nul
+goto :LOCALE
 
 :CHECK_BUILD
-for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
+color 2
 if %build:~0,5% LSS 17763 (
-    echo =============================================================
-    echo  %chbuild%
-    echo =============================================================
-    echo.
-    pause
-    goto :EOF )
+echo.
+echo.%agrl%
+echo.%agre%
+echo.%chbuild%
+echo.%agre%
+echo.                                %os% %build%
+echo.%agrs%
+echo.%agre%
+echo.%pte%
+echo.%agrs%
+pause >nul
+goto :EOF )
 
 reg query HKU\S-1-5-19 1>nul 2>nul
-if %ERRORLEVEL% equ 0 goto :START_SCRIPT
-echo =====================================================
-echo %chadmin%
-echo =====================================================
+if %ERRORLEVEL% equ 0 goto :AGREEMENT
 echo.
-pause
+echo.%agrl%
+echo.%agre%
+echo.%chadmin%
+echo.%agrs%
+echo.%agre%
+echo.%pte%
+echo.%agrs%
+pause >nul
 goto :EOF
 
 :START_SCRIPT
@@ -30,24 +39,41 @@ if %ERRORLEVEL% equ 0 set "FlightSigningEnabled=1"
 
 :CHOICE_MENU
 cls
+color 2
 set "WSH=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost"
 set "cver=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion"
 set "wdat=HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows"
-echo ============================================================
-echo * OfflineInsiderEnroll v%scriptver% by nondetect aka aleks242007 *
-echo *            Special thank's abbodi1406 ^& AveYo            *
-echo ============================================================
-echo.
-echo  1 - %m1% Dev Channel
-echo  2 - %m1% Beta Channel
-echo  3 - %m1% Release Preview Channel
-echo.
-echo  4 - %m3%
-echo  5 - %m4%
-echo.
-choice /C:12345 /N /M " %mch% [1,2,3,4,5] : "
-if errorlevel 5 goto:EOF
-if errorlevel 4 goto:STOP_INSIDER
+echo.%agrl%
+echo.%agre%
+echo.              ^|                 OfflineInsiderEnroll v%scriptver% by nondetect aka aleks242007               ^|
+echo.              ^|                            Special thank's abbodi1406 ^& AveYo                          ^|
+echo.%agre%
+echo.%agrd%
+echo.%agre%
+echo.%me%1] - %m1% Dev Channel
+echo.%agre%
+echo.%me%2] - %m1% Beta Channel
+echo.%agre%
+echo.%me%3] - %m1% Release Preview Channel
+echo.%agre%
+echo.%agrd%
+echo.%agre%
+echo.%m2%
+echo.%agre%
+echo.%m3%
+echo.%agre%
+echo.%agrd%
+echo.%agre%
+echo.%m4%
+echo.%agre%
+echo.%m5%
+echo.%agrs%
+echo.%agre%
+choice /C:1234567 /N /M "%mch% [1,2,3,4,5,6,7] : "
+if errorlevel 7 exit
+if errorlevel 6 goto:STOP_INSIDER
+if errorlevel 5 goto:EX_REMOVE_SKIP_CHECK
+if errorlevel 4 goto:EX_SKIP_CHECK
 if errorlevel 3 goto:ENROLL_RP
 if errorlevel 2 goto:ENROLL_BETA
 if errorlevel 1 goto:ENROLL_DEV
@@ -89,13 +115,19 @@ set "activerp=true"
 goto :CHECK_CHOICE
 
 :CHECK_CHOICE
-echo.
-echo %m2%
-echo.
+echo.%agrs%
+echo.%agre%
+echo.%m6%
+echo.%agrs%
+echo.%agre%
+echo.%me%%m7%
+echo.%agre%
+echo.%me%%m8%
+echo.%agrs%
+echo.%agre%
 choice /C:12 /N /M "%mch% [1,2] : "
 if errorlevel 2 goto:ENROLL
 if errorlevel 1 goto:ENROLL_SKIP_CHECK
-
 
 :RESET_INSIDER_CONFIG
 reg delete "%WSH%\Account" /f
@@ -167,7 +199,6 @@ echo: } ; Start-Process -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste
 goto :EOF
 
 :REMOVE_SKIP_CHECK
-cls
 echo.
 echo: $_Paste_in_Powershell = { $:code;  
 echo:  $N = 'Skip TPM Check on Dynamic Update'; $toggle = $null -eq $env:skip_tpm_enabled; $off = $false
@@ -175,74 +206,107 @@ echo:   $B = Get-WmiObject -Class __FilterToConsumerBinding -Namespace 'root\sub
 echo:   $C = Get-WmiObject -Class CommandLineEventConsumer -Namespace 'root\subscription' -Filter ^"Name='$N'^" -ea 0
 echo:   $F = Get-WmiObject -Class __EventFilter -NameSpace 'root\subscription' -Filter ^"Name='$N'^" -ea 0
 echo:   if ($B -or $C -or $F) { $B ^| Remove-WMIObject; $C ^| Remove-WMIObject; $F ^| Remove-WMIObject; $off = $true }
-echo:   if ($toggle -and $off) { write-host -fore 0xf -back 0xd ^"`n $N [REMOVED]^"; timeout /t 0; return }
+echo:   if ($toggle -and $off) { write-host -fore 0xf -back 0xd ^"`n $N [REMOVED] run again to install ^"; timeout /t 0; return }
 echo: } ; Start-Process -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
 goto :EOF
 
+:EX_SKIP_CHECK
+echo.%agrs%
+echo.%agre%
+echo.%apc%
+call :SKIP_CHECK >%temp%\oie.ps1 
+powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }"
+del /f /q "%temp%\oie.ps1"
+echo.%agre%
+echo.%apd%
+if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT
+echo.%agrs%
+echo.%agre%
+echo.%pte%
+echo.%agrs%
+pause > nul
+exit
+
+:EX_REMOVE_SKIP_CHECK
+echo.%agrs%
+echo.%agre%
+echo.%apc%
+call :REMOVE_SKIP_CHECK >%temp%\oie.ps1
+powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }"
+del /f /q "%temp%\oie.ps1"
+if %FlightSigningEnabled% neq 0 goto :ASK_FOR_REBOOT
+echo.%agre%
+echo.%apd%
+echo.%agrs%
+echo.%agre%
+echo.%pte%
+echo.%agrs%
+pause > nul
+exit
+
 :ENROLL
-echo.
-echo %apc%
+echo.%agrs%
+echo.%agre%
+echo.%apc%
 call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
 call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
 bcdedit /set {current} flightsigning yes >nul 2>&1
-echo %apd%
-echo.
+echo.%agre%
+echo.%apd%
 if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT
-echo %pte%
+echo.%agrs%
+echo.%agre%
+echo.%pte%
+echo.%agrs%
 pause >nul
-goto :EOF
+exit
 
 :ENROLL_SKIP_CHECK
-echo.
-echo %apc%
 call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
 call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
-call :SKIP_CHECK >%temp%\oie.ps1
-powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }" 1>NUL 2>NUL
 bcdedit /set {current} flightsigning yes >nul 2>&1
-echo %apd%
-del /f /q "%Temp%\oie.ps1" 1>NUL 2>NUL
-echo.
-if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT
-echo %pte%
-pause >nul
-goto :EOF
+call :EX_SKIP_CHECK
+
 
 :STOP_INSIDER
-echo %apc%
 call :RESET_INSIDER_CONFIG 1>nul 2>nul
-call :REMOVE_SKIP_CHECK >%temp%\oie.ps1
-powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }" 1>NUL 2>NUL
 bcdedit /deletevalue {current} flightsigning >nul 2>&1
-echo %apd%
-del /f /q "%Temp%\oie.ps1" 1>NUL 2>NUL
-echo.
-if %FlightSigningEnabled% neq 0 goto :ASK_FOR_REBOOT
-echo %pte%
-pause >nul
-goto :EOF
+call :EX_REMOVE_SKIP_CHECK
+
 
 :ASK_FOR_REBOOT
-set "choice="
-echo %rtitle%
-set /p choice="%rdesk% (y/N): "
-if /I "%choice%"=="y" shutdown -r -t 0
-goto :EOF
+echo.%agrs%
+echo.%agre%
+echo.%rtitle%
+echo.%rdesk%
+echo.%agrs%
+echo.%agre%
+echo.%me%%m7%
+echo.%agre%
+echo.%me%%m8%
+echo.%agrs%
+echo.%agre%
+choice /C:12 /N /M "%mch% [1,2] : "
+if errorlevel 2 exit
+if errorlevel 1 ( shutdown -r -t 0 )
 
 :RU_LOCALE
-echo %lang% in ru
-set "chadmin=Необходимо запускать от имени Администратора"
-set "chbuild=Ваша текущая сборка %build%. Для работы скрипта необходима версия Windows 10 v1809 сборка 17763 или выше"
+set "chadmin=              ^|                      Необходимо запускать от имени Администратора                      ^|"
+set "chbuild=              ^|       Для работы скрипта необходима версия Windows 10 v1809 сборка 17763 или выше      ^|"
 set "m1=Перейти на"
-set "m2=Отключить проверку совместимости? 1 - Да 2 - Нет."
-set "m3=Прекратить получение Инсайдерских сборок"
-set "m4=Выход без внесения изменений"
-set "mch=Введите свой выбор"
-set "apc=Применение изменений..."
-set "apd=Готово"
-set "pte=Нажмите любую кнопку для выхода"
-set "rtitle=Необходима перезагрузка чтобы изменения вступили в силу"
-set "rdesk=Хотите перезагрузить компьютер"
+set "m2=              ^|                    [4] - Отключить проверку совместимости                              ^|"
+set "m3=              ^|                    [5] - Включить проверку совместимости                               ^|"
+set "m4=              ^|                    [6] - Прекратить получение Инсайдерских сборок                      ^|"
+set "m5=              ^|                    [7] - Выход без внесения изменений                                  ^|"
+set "m6=              ^|                    Отключить проверку совместимости?                                   ^|"
+set "m7=1] - Да                                                            ^|"
+set "m8=2] - Нет                                                           ^|"
+set "mch=.             | Введите свой выбор"
+set "apc=              ^|                    Применение изменений...                                             ^|"
+set "apd=              ^|                    Готово                                                              ^|"
+set "pte=              ^| Нажмите любую кнопку для выхода                                                        ^|"
+set "rtitle=              ^|                 Необходима перезагрузка чтобы изменения вступили в силу                ^|"
+set "rdesk=              ^|                        Хотите перезагрузить компьютер сейчас?                          ^|"
 set "actitle=Учетная запись участника программы предварительной оценки Windows"
 set "acdesc=Нет привязанной учётной записи"
 set "acbutton=Изменить"
@@ -262,8 +326,8 @@ set "mdesc=Это устройство было зарегистрировано в программе предварительной оцен
 set "aco=Выбранные настройки"
 set "mnottitle=Уведомление о настройках телеметрии"
 set "mnotdesk1=Программа предварительной оценки Windows требует, чтобы в настройках сбора диагностических данных была включена"
-set "mnotdesk2=Отправка необязательных диагностических данных."
-set "mnotdesk3=Вы можете проверить или изменить свои текущие настройки в"
+set "mnotdesk2=Отправка необязательных диагностических данных"
+set "mnotdesk3=. Вы можете проверить или изменить свои текущие настройки в"
 set "mnotdesk4=Диагностика и отзывы"
 set "mnotbutton=Открыть Диагностика и отзывы"
 set "unrtitle=Прекратить получение предварительных сборок"
@@ -272,22 +336,32 @@ set "unrtogdesk=Доступно для каналов бета-версии и предварительного выпуска. Вкл
 set "unrlinktitle=Быстрая отмена регистрации устройства"
 set "unrlinkdesk=Чтобы прекратить получение сборок Insider Preview на устройстве, выполните чистую установку последней версии Windows. Примечание. При этом будут удалены все ваши данные и установлена свежая копия Windows."
 set "unrreltext=Выход из программы предварительной оценки Windows"
+set "agrt=                                    Соглашение об использовании OfflineInsiderEnroll"
+set "agr1=              ^|           Применяя скрипт Offline Insider Enroll Вы понимаете все риски и любые        ^|"
+set "agr2=              ^|       повреждения вашего компьютера из-за отсутствия совместимости не покрываются      ^|"
+set "agr3=              ^|         гарантией производителя или авторами данного скрипта. Детали по ссылке:        ^|"
+set "agr4=              ^|         Выбрав Принять, вы подтверждаете, что прочитали и поняли это соглашение.       ^|"
+set "agr5=              ^|                [1] Принять                                                             ^|"
+set "agr6=              ^|                [2] Отказаться                                                          ^|"
 goto :CHECK_BUILD
 
 :EN_LOCALE
-echo %lang% in en
-set "chadmin=This script needs to be executed as an administrator."
-set "chbuild=Your build is %build%. This script is compatible only with Windows 10 v1809 build 17763 and later."
+set "chadmin=              ^|                   This script needs to be executed as an Administrator.                ^|"
+set "chbuild=              ^|      This script is compatible only with Windows 10 v1809 build 17763 and later.       ^|"
 set "m1=Enroll to"
-set "m2=Disable compatibility checker? 1 - Yes 2 - No."
-set "m3=Stop receiving Insider Preview builds"
-set "m4=Quit without making any changes"
-set "mch=Enter Your Choice"
-set "apc=Applying changes..."
-set "apd=Done"
-set "pte=Press any key to exit."
-set "rtitle=A reboot is required to finish applying changes."
-set "rdesk=Would you like to reboot your PC?"
+set "m2=              ^|                    [4] - Disable compatibility check                                   ^|"
+set "m3=              ^|                    [5] - Enable compatibility check                                    ^|"
+set "m4=              ^|                    [6] - Stop receiving Insider Preview builds                         ^|"
+set "m5=              ^|                    [7] - Quit without making any changes                               ^|"
+set "m6=              ^|                    Disable compatibility check                                         ^|"
+set "m7=1] - Yes                                                           ^|"
+set "m8=2] - No                                                            ^|"
+set "mch=.             | Enter Your Choice"
+set "apc=              ^|                    Applying changes...                                                 ^|"
+set "apd=              ^|                    Done                                                                ^|"
+set "pte=              ^| Press any key to exit.                                                                 ^|"
+set "rtitle=              ^|                     A reboot is required to finish applying changes.                   ^|"
+set "rdesk=              ^|                         Do you want restart your computer now?                         ^|"
 set "actitle=Windows Insider account"
 set "acdesc=No account linked"
 set "acbutton=Edit"
@@ -317,4 +391,57 @@ set "unrtogdesk=Available for Beta and Release Preview channels. Turn this on to
 set "unrlinktitle=Unenroll this device immediately"
 set "unrlinkdesk=To stop getting Insider Preview builds on this device, you'll need to clean install the latest release of Windows. Note: This option will erase all your data and install a fresh copy of Windows."
 set "unrreltext=Leaving the Insider Program"
+set "agrt=                                        Agreement of using OfflineInsiderEnroll"
+set "agr1=              ^|         By using the Offline Insider Enroll script, you understand all the risks       ^|"
+set "agr2=              ^|       and any damage to your computer due to lack of compatibility is not covered      ^|"
+set "agr3=              ^|    by the manufacturer's warranty or the authors of this script. Details on the link:  ^|"
+set "agr4=              ^|  By choosing to Accept, you confirm that you have read and understood this agreement.  ^|"
+set "agr5=              ^|                [1] Accept                                                              ^|"
+set "agr6=              ^|                [2] Decline                                                             ^|"
 goto :CHECK_BUILD
+
+:AGREEMENT
+set "agru=              ^|         https://github.com/nondetect/offlineinsiderenroll/blob/master/readme.md        ^|"
+cls
+color c
+echo.%agrl%
+echo.
+echo.%agrt%
+echo.
+echo.                                  %os% %build%
+echo.%agrl%
+echo.%agre%
+echo.%agr1%
+echo.%agre%
+echo.%agr2%
+echo.%agre%
+echo.%agr3%
+echo.%agre%
+echo.%agru%
+echo.%agre%
+echo.%agrd%
+echo.%agre%
+echo.%agr4%
+echo.%agre%
+echo.%agrd%
+echo.%agre%
+echo.%agr5%
+echo.%agre%
+echo.%agr6%
+echo.%agrs%
+echo.%agre%
+choice /C:12 /N /M "%mch% [1,2] : "
+echo.%agrs%
+if errorlevel 2 exit
+if errorlevel 1 goto:START_SCRIPT
+
+:LOCALE
+set "agrl=               ________________________________________________________________________________________"
+set "agre=              ^|                                                                                        ^|"
+set "agrs=              ^|________________________________________________________________________________________^|"
+set "agrd=              ^|========================================================================================^|"
+set "me=              ^|                    ["
+for /f "tokens=2 delims==" %%a in ('wmic os get caption /value') do set "os=%%a"
+for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
+for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
+if /I "%lang%"=="ru"  ( goto :RU_LOCALE ) else ( goto :EN_LOCALE )
