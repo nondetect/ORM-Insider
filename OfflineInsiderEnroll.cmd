@@ -1,5 +1,7 @@
 @echo off
-set "scriptver=2.8.5"
+set "scriptver=2.8.6"
+title OfflineInsiderEnroll %scriptver%
+mode con:cols=90 lines=28
 chcp 866 >nul
 goto :LOCALE
 
@@ -45,8 +47,8 @@ set "cver=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion"
 set "wdat=HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows"
 echo.%agrl%
 echo.%agre%
-echo.              ^|                 OfflineInsiderEnroll v%scriptver% by nondetect aka aleks242007               ^|
-echo.              ^|                            Special thank's abbodi1406 ^& AveYo                          ^|
+echo.^|                 OfflineInsiderEnroll v%scriptver% by nondetect aka aleks242007               ^|
+echo.^|                            Special thank's abbodi1406 ^& AveYo                          ^|
 echo.%agre%
 echo.%agrd%
 echo.%agre%
@@ -225,7 +227,7 @@ echo.%agre%
 echo.%pte%
 echo.%agrs%
 pause > nul
-exit
+goto :EOF
 
 :EX_REMOVE_SKIP_CHECK
 echo.%agrs%
@@ -242,7 +244,7 @@ echo.%agre%
 echo.%pte%
 echo.%agrs%
 pause > nul
-exit
+goto :EOF
 
 :ENROLL
 echo.%agrs%
@@ -265,13 +267,13 @@ exit
 call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
 call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
 bcdedit /set {current} flightsigning yes >nul 2>&1
-call :EX_SKIP_CHECK
+goto :EX_SKIP_CHECK
 
 
 :STOP_INSIDER
 call :RESET_INSIDER_CONFIG 1>nul 2>nul
 bcdedit /deletevalue {current} flightsigning >nul 2>&1
-call :EX_REMOVE_SKIP_CHECK
+goto :EX_REMOVE_SKIP_CHECK
 
 
 :ASK_FOR_REBOOT
@@ -291,22 +293,22 @@ if errorlevel 2 exit
 if errorlevel 1 ( shutdown -r -t 0 )
 
 :RU_LOCALE
-set "chadmin=              ^|                      Необходимо запускать от имени Администратора                      ^|"
-set "chbuild=              ^|       Для работы скрипта необходима версия Windows 10 v1809 сборка 17763 или выше      ^|"
+set "chadmin=^|                      Необходимо запускать от имени Администратора                      ^|"
+set "chbuild=^|       Для работы скрипта необходима версия Windows 10 v1809 сборка 17763 или выше      ^|"
 set "m1=Перейти на"
-set "m2=              ^|                    [4] - Отключить проверку совместимости                              ^|"
-set "m3=              ^|                    [5] - Включить проверку совместимости                               ^|"
-set "m4=              ^|                    [6] - Прекратить получение Инсайдерских сборок                      ^|"
-set "m5=              ^|                    [7] - Выход без внесения изменений                                  ^|"
-set "m6=              ^|                    Отключить проверку совместимости?                                   ^|"
+set "m2=^|                    [4] - Отключить проверку совместимости                              ^|"
+set "m3=^|                    [5] - Включить проверку совместимости                               ^|"
+set "m4=^|                    [6] - Прекратить получение Инсайдерских сборок                      ^|"
+set "m5=^|                    [7] - Выход без внесения изменений                                  ^|"
+set "m6=^|                    Отключить проверку совместимости?                                   ^|"
 set "m7=1] - Да                                                            ^|"
 set "m8=2] - Нет                                                           ^|"
 set "mch=.             | Введите свой выбор"
-set "apc=              ^|                    Применение изменений...                                             ^|"
-set "apd=              ^|                    Готово                                                              ^|"
-set "pte=              ^| Нажмите любую кнопку для выхода                                                        ^|"
-set "rtitle=              ^|                 Необходима перезагрузка чтобы изменения вступили в силу                ^|"
-set "rdesk=              ^|                        Хотите перезагрузить компьютер сейчас?                          ^|"
+set "apc=^|                    Применение изменений...                                             ^|"
+set "apd=^|                    Готово                                                              ^|"
+set "pte=^| Нажмите любую кнопку для выхода                                                        ^|"
+set "rtitle=^|                 Необходима перезагрузка чтобы изменения вступили в силу                ^|"
+set "rdesk=^|                        Хотите перезагрузить компьютер сейчас?                          ^|"
 set "actitle=Учетная запись участника программы предварительной оценки Windows"
 set "acdesc=Нет привязанной учётной записи"
 set "acbutton=Изменить"
@@ -336,32 +338,32 @@ set "unrtogdesk=Доступно для каналов бета-версии и предварительного выпуска. Вкл
 set "unrlinktitle=Быстрая отмена регистрации устройства"
 set "unrlinkdesk=Чтобы прекратить получение сборок Insider Preview на устройстве, выполните чистую установку последней версии Windows. Примечание. При этом будут удалены все ваши данные и установлена свежая копия Windows."
 set "unrreltext=Выход из программы предварительной оценки Windows"
-set "agrt=                                    Соглашение об использовании OfflineInsiderEnroll"
-set "agr1=              ^|           Применяя скрипт Offline Insider Enroll Вы понимаете все риски и любые        ^|"
-set "agr2=              ^|       повреждения вашего компьютера из-за отсутствия совместимости не покрываются      ^|"
-set "agr3=              ^|         гарантией производителя или авторами данного скрипта. Детали по ссылке:        ^|"
-set "agr4=              ^|         Выбрав Принять, вы подтверждаете, что прочитали и поняли это соглашение.       ^|"
-set "agr5=              ^|                [1] Принять                                                             ^|"
-set "agr6=              ^|                [2] Отказаться                                                          ^|"
+set "agrt=                      Соглашение об использовании OfflineInsiderEnroll"
+set "agr1=^|           Применяя скрипт Offline Insider Enroll Вы понимаете все риски и любые        ^|"
+set "agr2=^|       повреждения вашего компьютера из-за отсутствия совместимости не покрываются      ^|"
+set "agr3=^|         гарантией производителя или авторами данного скрипта. Детали по ссылке:        ^|"
+set "agr4=^|         Выбрав Принять, вы подтверждаете, что прочитали и поняли это соглашение.       ^|"
+set "agr5=^|                [1] Принять                                                             ^|"
+set "agr6=^|                [2] Отказаться                                                          ^|"
 goto :CHECK_BUILD
 
 :EN_LOCALE
-set "chadmin=              ^|                   This script needs to be executed as an Administrator.                ^|"
-set "chbuild=              ^|      This script is compatible only with Windows 10 v1809 build 17763 and later.       ^|"
+set "chadmin=^|                   This script needs to be executed as an Administrator.                ^|"
+set "chbuild=^|      This script is compatible only with Windows 10 v1809 build 17763 and later.       ^|"
 set "m1=Enroll to"
-set "m2=              ^|                    [4] - Disable compatibility check                                   ^|"
-set "m3=              ^|                    [5] - Enable compatibility check                                    ^|"
-set "m4=              ^|                    [6] - Stop receiving Insider Preview builds                         ^|"
-set "m5=              ^|                    [7] - Quit without making any changes                               ^|"
-set "m6=              ^|                    Disable compatibility check                                         ^|"
+set "m2=^|                    [4] - Disable compatibility check                                   ^|"
+set "m3=^|                    [5] - Enable compatibility check                                    ^|"
+set "m4=^|                    [6] - Stop receiving Insider Preview builds                         ^|"
+set "m5=^|                    [7] - Quit without making any changes                               ^|"
+set "m6=^|                    Disable compatibility check?                                        ^|"
 set "m7=1] - Yes                                                           ^|"
 set "m8=2] - No                                                            ^|"
 set "mch=.             | Enter Your Choice"
-set "apc=              ^|                    Applying changes...                                                 ^|"
-set "apd=              ^|                    Done                                                                ^|"
-set "pte=              ^| Press any key to exit.                                                                 ^|"
-set "rtitle=              ^|                     A reboot is required to finish applying changes.                   ^|"
-set "rdesk=              ^|                         Do you want restart your computer now?                         ^|"
+set "apc=^|                    Applying changes...                                                 ^|"
+set "apd=^|                    Done                                                                ^|"
+set "pte=^| Press any key to exit.                                                                 ^|"
+set "rtitle=^|                     A reboot is required to finish applying changes.                   ^|"
+set "rdesk=^|                         Do you want restart your computer now?                         ^|"
 set "actitle=Windows Insider account"
 set "acdesc=No account linked"
 set "acbutton=Edit"
@@ -391,24 +393,24 @@ set "unrtogdesk=Available for Beta and Release Preview channels. Turn this on to
 set "unrlinktitle=Unenroll this device immediately"
 set "unrlinkdesk=To stop getting Insider Preview builds on this device, you'll need to clean install the latest release of Windows. Note: This option will erase all your data and install a fresh copy of Windows."
 set "unrreltext=Leaving the Insider Program"
-set "agrt=                                        Agreement of using OfflineInsiderEnroll"
-set "agr1=              ^|         By using the Offline Insider Enroll script, you understand all the risks       ^|"
-set "agr2=              ^|       and any damage to your computer due to lack of compatibility is not covered      ^|"
-set "agr3=              ^|    by the manufacturer's warranty or the authors of this script. Details on the link:  ^|"
-set "agr4=              ^|  By choosing to Accept, you confirm that you have read and understood this agreement.  ^|"
-set "agr5=              ^|                [1] Accept                                                              ^|"
-set "agr6=              ^|                [2] Decline                                                             ^|"
+set "agrt=                          Agreement of using OfflineInsiderEnroll"
+set "agr1=^|         By using the Offline Insider Enroll script, you understand all the risks       ^|"
+set "agr2=^|       and any damage to your computer due to lack of compatibility is not covered      ^|"
+set "agr3=^|    by the manufacturer's warranty or the authors of this script. Details on the link:  ^|"
+set "agr4=^|  By choosing to Accept, you confirm that you have read and understood this agreement.  ^|"
+set "agr5=^|                [1] Accept                                                              ^|"
+set "agr6=^|                [2] Decline                                                             ^|"
 goto :CHECK_BUILD
 
 :AGREEMENT
-set "agru=              ^|         https://github.com/nondetect/offlineinsiderenroll/blob/master/readme.md        ^|"
+set "agru=^|         https://github.com/nondetect/offlineinsiderenroll/blob/master/readme.md        ^|"
 cls
 color c
 echo.%agrl%
 echo.
 echo.%agrt%
 echo.
-echo.                                  %os% %build%
+echo.                    %os% %build%
 echo.%agrl%
 echo.%agre%
 echo.%agr1%
@@ -436,11 +438,11 @@ if errorlevel 2 exit
 if errorlevel 1 goto:START_SCRIPT
 
 :LOCALE
-set "agrl=               ________________________________________________________________________________________"
-set "agre=              ^|                                                                                        ^|"
-set "agrs=              ^|________________________________________________________________________________________^|"
-set "agrd=              ^|========================================================================================^|"
-set "me=              ^|                    ["
+set "agrl= ________________________________________________________________________________________"
+set "agre=^|                                                                                        ^|"
+set "agrs=^|________________________________________________________________________________________^|"
+set "agrd=^|========================================================================================^|"
+set "me=^|                    ["
 for /f "tokens=2 delims==" %%a in ('wmic os get caption /value') do set "os=%%a"
 for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
 for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
