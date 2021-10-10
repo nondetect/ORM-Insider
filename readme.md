@@ -33,7 +33,7 @@ correct telemetry settings. You can verify or modify your telemetry settings in
 
 #### Restoring Windows Insider Program to default options
 To restore *Windows Insider Program* to default settings simply choose `Stop
-receiving Insider Preview builds` in OfflineInsiderEnroll. You will get prompted
+receiving Insider Preview builds` in ORM-Insider. You will get prompted
 to reboot, because this option will disable *Microsoft Flight Signing*.
 
 ### How does this work?
