@@ -1,8 +1,8 @@
-OfflineInsiderEnroll
+ORM-Insider
 --------------------
 
 ### Description
-OfflineInsiderEnroll is a simple Windows Command Prompt script to enable access
+ORM-Insider is a simple Windows Command Prompt script to enable access
 to the Windows Insider Program on machines not signed in with Microsoft Account.
 
 This script is compatible only with Windows 10 RS5 and later.
@@ -33,7 +33,7 @@ correct telemetry settings. You can verify or modify your telemetry settings in
 
 #### Restoring Windows Insider Program to default options
 To restore *Windows Insider Program* to default settings simply choose `Stop
-receiving Insider Preview builds` in OfflineInsiderEnroll. You will get prompted
+receiving Insider Preview builds` in ORM-Insider. You will get prompted
 to reboot, because this option will disable *Microsoft Flight Signing*.
 
 ### How does this work?
