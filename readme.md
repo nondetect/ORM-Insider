@@ -1,8 +1,8 @@
-OfflineInsiderEnroll
+ORM-Insider
 --------------------
 
 ### Description
-OfflineInsiderEnroll is a simple Windows Command Prompt script to enable access
+ORM-Insider is a simple Windows Command Prompt script to enable access
 to the Windows Insider Program on machines not signed in with Microsoft Account.
 
 This script is compatible only with Windows 10 RS5 and later.
