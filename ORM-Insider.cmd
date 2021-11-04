@@ -1,5 +1,5 @@
 @echo off
-set "scriptver=2.8.7"
+set "scriptver=2.8.8"
 title ORM-Insider %scriptver%
 mode con:cols=90 lines=28
 chcp 866 >nul
@@ -13,7 +13,7 @@ echo.%agrl%
 echo.%agre%
 echo.%chbuild%
 echo.%agre%
-echo.                                %os% %build%
+echo.                          %os% %build%
 echo.%agrs%
 echo.%agre%
 echo.%pte%
@@ -443,7 +443,7 @@ set "agre=^|                                                                    
 set "agrs=^|________________________________________________________________________________________^|"
 set "agrd=^|========================================================================================^|"
 set "me=^|                    ["
-for /f "tokens=2 delims==" %%a in ('wmic os get caption /value') do set "os=%%a"
+for /f "tokens=2-8 delims= " %%a in ('powershell -c "(Get-WmiObject -class Win32_OperatingSystem).Caption"') do set "os=%%a %%b %%c %%d %%e %%f"
 for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
 for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
 if /I "%lang%"=="ru"  ( goto :RU_LOCALE ) else ( goto :EN_LOCALE )
