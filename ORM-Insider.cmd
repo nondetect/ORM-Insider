@@ -1,5 +1,5 @@
 @echo off
-set "scriptver=2.8.8"
+set "scriptver=2.9.0"
 title ORM-Insider %scriptver%
 mode con:cols=90 lines=28
 chcp 866 >nul
@@ -7,7 +7,7 @@ goto :LOCALE
 
 :CHECK_BUILD
 color a
-if %build:~0,5% LSS 17763 (
+if %build:~0,5% LSS %defbuild% (
 echo.
 echo.%agrl%
 echo.%agre%
@@ -19,9 +19,9 @@ echo.%agre%
 echo.%pte%
 echo.%agrs%
 pause >nul
-goto :EOF )
+goto :EOF ) 
 
-reg query HKU\S-1-5-19 1>nul 2>nul
+net session >nul 2>&1
 if %ERRORLEVEL% equ 0 goto :AGREEMENT
 echo.
 echo.%agrl%
@@ -32,7 +32,7 @@ echo.%agre%
 echo.%pte%
 echo.%agrs%
 pause >nul
-goto :EOF
+goto :EOF 
 
 :START_SCRIPT
 set "FlightSigningEnabled=0"
@@ -189,27 +189,40 @@ goto :EOF
 :SKIP_CHECK
 cls
 echo.
-echo: $_Paste_in_Powershell = { $:code;  
-echo:  $N = 'Skip TPM Check on Dynamic Update'; $toggle = $null -eq $env:skip_tpm_enabled; $off = $false
-echo:   $P = ^"$([environment]::SystemDirectory)\cmd.exe^"; $T = ^"$P /q $N (c) AveYo, 2021 /d /rerase appraiserres.dll /f /s /q^"
-echo:   $D = ^"$($P[0]):\`$WINDOWS.~BT^"; $Q = ^"SELECT SessionID from Win32_ProcessStartTrace WHERE ProcessName='vdsldr.exe'^"
-echo:   $F = Set-WMIInstance -Class __EventFilter -NameSpace 'root\subscription' -args @{ Name = $N; EventNameSpace = 'root\cimv2'; QueryLanguage = 'WQL'; Query = $Q} -PutType 2 -ea 0
-echo:   $C = Set-WMIInstance -Class CommandLineEventConsumer -Namespace 'root\subscription' -args @{ Name = $N; WorkingDirectory = $D; ExecutablePath = $P; CommandLineTemplate = $T; Priority = 128} -PutType 2 -ea 0
-echo:   $B = Set-WMIInstance -Class __FilterToConsumerBinding -Namespace 'root\subscription' -args @{Filter=$F;Consumer=$C} -PutType 2 -ea 0
-echo:  if ($toggle) { write-host -fore 0xf -back 0x2 ^"`n $N [INSTALLED]^"; timeout /t 0} ; $:code;
-echo: } ; Start-Process -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
+echo: $_Paste_in_Powershell = {
+echo:   $N = ^"Skip TPM Check on Dynamic Update^"; $X = @(^"' $N (c) AveYo 2021 : v4 IFEO-based with no flashing cmd window^") 
+echo:   $X+= 'C = ^"cmd /q AveYo /d/x/r pushd %%systemdrive%%\\$windows.~bt\\Sources\\Panther ^&^& mkdir Appraiser_Data.ini\\AveYo^&^"'
+echo:   $X+= 'M = ^"pushd %%allusersprofile%%^& ren vd.exe vdsldr.exe ^&robocopy ^"^"%%systemroot%%/system32/^"^" ^"^"./^"^" ^"^"vdsldr.exe^"^"^&^"'
+echo:   $X+= 'D = ^"ren vdsldr.exe vd.exe^& start vd.exe -Embedding^" : CreateObject(^"WScript.Shell^").Run C ^& M ^& D, 0, False'    
+echo:   $K = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\vdsldr.exe'
+echo:   $P = [Environment]::GetFolderPath('CommonApplicationData'); $F = join-path $P '11tpm.vbs'; $V = ^"wscript $F //B //T:5^" 
+echo:   if (test-path $K) {
+echo:     write-host -fore 0xf -back 0x4 ^"`n $N v4 already [INSTALLED]^"
+echo:   } else {
+echo:     new-item $K -force -ea 0 ^>''; set-itemproperty $K 'Debugger' $V -force -ea 0; [io.file]::WriteAllText($F, $X-join^"`r`n^")
+echo:     write-host -fore 0xf -back 0x2 ^"`n $N v4 [INSTALLED] ^"
+echo:   } ;  rmdir $([Environment]::SystemDirectory[0]+':\\$Windows.~BT\\Sources\\Panther') -rec -force -ea 0; timeout /t 2
+echo: } ; start powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^" -verb runas
 goto :EOF
 
+
 :REMOVE_SKIP_CHECK
+cls
 echo.
-echo: $_Paste_in_Powershell = { $:code;  
-echo:  $N = 'Skip TPM Check on Dynamic Update'; $toggle = $null -eq $env:skip_tpm_enabled; $off = $false
-echo:   $B = Get-WmiObject -Class __FilterToConsumerBinding -Namespace 'root\subscription' -Filter ^"Filter = ^"^"__eventfilter.name='$N'^"^"^" -ea 0
-echo:   $C = Get-WmiObject -Class CommandLineEventConsumer -Namespace 'root\subscription' -Filter ^"Name='$N'^" -ea 0
-echo:   $F = Get-WmiObject -Class __EventFilter -NameSpace 'root\subscription' -Filter ^"Name='$N'^" -ea 0
-echo:   if ($B -or $C -or $F) { $B ^| Remove-WMIObject; $C ^| Remove-WMIObject; $F ^| Remove-WMIObject; $off = $true }
-echo:   if ($toggle -and $off) { write-host -fore 0xf -back 0xd ^"`n $N [REMOVED] run again to install ^"; timeout /t 0; return }
-echo: } ; Start-Process -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
+echo: $_Paste_in_Powershell = {
+echo:   $N = ^"Skip TPM Check on Dynamic Update^"; $X = @(^"' $N (c) AveYo 2021 : v4 IFEO-based with no flashing cmd window^") 
+echo:   $X+= 'C = ^"cmd /q AveYo /d/x/r pushd %%systemdrive%%\\$windows.~bt\\Sources\\Panther ^&^& mkdir Appraiser_Data.ini\\AveYo^&^"'
+echo:   $X+= 'M = ^"pushd %%allusersprofile%%^& ren vd.exe vdsldr.exe ^&robocopy ^"^"%%systemroot%%/system32/^"^" ^"^"./^"^" ^"^"vdsldr.exe^"^"^&^"'
+echo:   $X+= 'D = ^"ren vdsldr.exe vd.exe^& start vd.exe -Embedding^" : CreateObject(^"WScript.Shell^").Run C ^& M ^& D, 0, False'    
+echo:   $K = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\vdsldr.exe'
+echo:   $P = [Environment]::GetFolderPath('CommonApplicationData'); $F = join-path $P '11tpm.vbs'; $V = ^"wscript $F //B //T:5^" 
+echo:   if (test-path $K) {
+echo:     remove-item $K -force -ea 0 ^>''; del $F -force -ea 0; del (join-path $P 'vd.exe') -force -ea 0
+echo:     write-host -fore 0xf -back 0xd ^"`n $N v4 [REMOVED]^"
+echo:   } else {
+echo:     write-host -fore 0xf -back 0x4 ^"`n $N v4 already [REMOVED]^"
+echo:   } ;  rmdir $([Environment]::SystemDirectory[0]+':\\$Windows.~BT\\Sources\\Panther') -rec -force -ea 0; timeout /t 2
+echo: } ; start powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^" -verb runas
 goto :EOF
 
 :EX_SKIP_CHECK
@@ -294,7 +307,7 @@ if errorlevel 1 ( shutdown -r -t 0 )
 
 :RU_LOCALE
 set "chadmin=^|                      Необходимо запускать от имени Администратора                      ^|"
-set "chbuild=^|       Для работы скрипта необходима версия Windows 10 v1809 сборка 17763 или выше      ^|"
+set "chbuild=^|       Для работы скрипта необходима версия Windows 10 v1809 сборка %defbuild% или выше      ^|"
 set "m1=Перейти на"
 set "m2=^|                    [4] - Отключить проверку совместимости                              ^|"
 set "m3=^|                    [5] - Включить проверку совместимости                               ^|"
@@ -349,7 +362,7 @@ goto :CHECK_BUILD
 
 :EN_LOCALE
 set "chadmin=^|                   This script needs to be executed as an Administrator.                ^|"
-set "chbuild=^|      This script is compatible only with Windows 10 v1809 build 17763 and later.       ^|"
+set "chbuild=^|      This script is compatible only with Windows 10 v1809 build %defbuild% and later.       ^|"
 set "m1=Enroll to"
 set "m2=^|                    [4] - Disable compatibility check                                   ^|"
 set "m3=^|                    [5] - Enable compatibility check                                    ^|"
@@ -443,6 +456,7 @@ set "agre=^|                                                                    
 set "agrs=^|________________________________________________________________________________________^|"
 set "agrd=^|========================================================================================^|"
 set "me=^|                    ["
+set "defbuild=17763"
 for /f "tokens=2-8 delims= " %%a in ('powershell -c "(Get-WmiObject -class Win32_OperatingSystem).Caption"') do set "os=%%a %%b %%c %%d %%e %%f"
 for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
 for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
