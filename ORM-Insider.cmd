@@ -1,5 +1,5 @@
 @echo off
-set "scriptver=2.9.0"
+set "scriptver=2.9.1"
 title ORM-Insider %scriptver%
 mode con:cols=90 lines=28
 chcp 866 >nul
@@ -173,13 +173,13 @@ reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "AccountText" /d "{\"Description\":\"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "DeviceStatusBarText" /d "{\"Subtitle\":\"%dsdesk%\",\"LinkTitle\":\"%dsltitle%\",\"LinkUrl\":\"https://aka.ms/%Channel%Latest\",\"ButtonUrl\":\"ms-settings:about\",\"Status\":1,\"Title\":\"%dstitle%\",\"ButtonTitle\":\"%dsbutton%\"}"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "ConfigurationExpanderText_Rejuv" /d "{\"Title\":\"%conftitle%\",\"RelatedLinkText\":\"%confrlink%\",\"RelatedLinkUrl\":\"https://github.com/nondetect/ORM-Insider/releases\"}"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "UnenrollText_Rejuv" /d "{\"Status\":\"\",\"ToggleTitle\":\"%unrtogtitle%\",\"ToggleDescription\":\"%unrtogdesk%\",\"LinkTitle\":\"%unrlinktitle%\",\"LinkDescription\":\"%unrlinkdesk%\",\"LinkUrl\":\"https://go.microsoft.com/fwlink/?linkid=2136438\",\"Title\":\"%unrtitle%\",\"RelatedLinkText\":\"%unrreltext%\",\"RelatedLinkUrl\":\"https://insider.windows.com/leave-program\"}"
-reg add "%WSH%\UI\Strings" /f /t REG_SZ /v StickyXaml /d "<StackPanel xmlns="^""http://schemas.microsoft.com/winfx/2006/xaml/presentation"^""><TextBlock Margin="^""0,10,0,0"^"" Style="^""{StaticResource BodyTextBlockStyle}"^"">%mdesc% v%scriptver%. %confrlink%. <Hyperlink NavigateUri="^""https://github.com/nondetect/ORM-Insider/releases"^"" TextDecorations="^""None"^"">%lm%</Hyperlink></TextBlock><TextBlock Margin="^""0,10,0,5"^"" Style="^""{StaticResource SubtitleTextBlockStyle}"^""><Run FontFamily="^""Segoe MDL2 Assets"^"">&#xECA7;</Run> <Span FontWeight="^""SemiBold"^"">%aco%</Span></TextBlock><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^""><Span FontWeight="^""SemiBold"^"">%Fancy%</Span></TextBlock><TextBlock Text="^""Channel: %Channel%"^"" Style="^""{StaticResource BodyTextBlockStyle }"^"" /><TextBlock Text="^""Content: %Content%"^"" Style="^""{StaticResource BodyTextBlockStyle }"^"" /><TextBlock Margin="^""0,10,0,0"^"" Style="^""{StaticResource SubtitleTextBlockStyle}"^""><Run FontFamily="^""Segoe MDL2 Assets"^"">&#xE9D9;</Run> <Span FontWeight="^""SemiBold"^"">%mnottitle%</Span></TextBlock><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^"">%mnotdesk1% <Span FontWeight="^""SemiBold"^"">%mnotdesk2%</Span>%mnotdesk3% <Span FontWeight="^""SemiBold"^"">%mnotdesk4%</Span>.</TextBlock><Button Command="^""{StaticResource ActivateUriCommand}"^"" CommandParameter="^""ms-settings:privacy-feedback"^"" Margin="^""0,10,0,20"^""><TextBlock Margin="^""5,0,5,0"^"">%mnotbutton%</TextBlock></Button></StackPanel>"
+reg add "%WSH%\UI\Strings" /f /t REG_SZ /v StickyXaml /d "<StackPanel xmlns="^""http://schemas.microsoft.com/winfx/2006/xaml/presentation"^""><TextBlock Margin="^""0,10,0,0"^"" Style="^""{StaticResource BodyTextBlockStyle}"^"">%mdesc% v%scriptver%. %confrlink%. <Hyperlink NavigateUri="^""https://github.com/nondetect/ORM-Insider/releases"^"" TextDecorations="^""None"^"">%lm%</Hyperlink></TextBlock><TextBlock Margin="^""0,10,0,5"^"" Style="^""{StaticResource SubtitleTextBlockStyle}"^""><Run FontFamily="^""Segoe MDL2 Assets"^"">&#xECA7;</Run> <Span FontWeight="^""SemiBold"^"">%aco%</Span></TextBlock><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^""><Span FontWeight="^""SemiBold"^"">%Fancy%</Span></TextBlock><TextBlock Text="^""Channel: %Channel%"^"" Style="^""{StaticResource BodyTextBlockStyle }"^"" /><TextBlock Text="^""Content: %Content%"^"" Style="^""{StaticResource BodyTextBlockStyle }"^"" /><TextBlock Margin="^""0,10,0,0"^"" Style="^""{StaticResource SubtitleTextBlockStyle}"^""><Run FontFamily="^""Segoe MDL2 Assets"^"">&#xE9D9;</Run> <Span FontWeight="^""SemiBold"^"">%mnottitle%</Span></TextBlock><TextBlock Style="^""{StaticResource BodyTextBlockStyle }"^"">%mnotdesk1% <Span FontWeight="^""SemiBold"^"">%mnotdesk2%</Span>%mnotdesk3% <Span FontWeight="^""SemiBold"^"">%mnotdesk4%</Span>.</TextBlock><Button Command="^""{StaticResource ActivateUriCommand}"^"" CommandParameter="^""ms-settings:privacy-feedback"^"" Margin="^""0,10,0,20"^""><TextBlock Margin="^""5,0,5,0"^"">%mnotdesk4%</TextBlock></Button></StackPanel>"
 chcp 1251 >nul
 (
 echo Windows Registry Editor Version 5.00
 echo.
 echo [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost\UI\Strings]
-echo "StickyMessage"="{\"Message\":\"%mtitle%\",\"LinkTitle\":\"%lm%\",\"LinkUrl\":\"https://github.com/nondetect/ORM-Insider/blob/master/readme.md\",\"DynamicXaml\":\"^<StackPanel xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\"^>^<TextBlock Margin=\\\"0,-25,0,10\\\" Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mdesc% v%scriptver%.^</TextBlock^>^<TextBlock Style=\\\"{StaticResource SubtitleTextBlockStyle }\\\" ^>^<Run FontFamily=\\\"Segoe Fluent Icons\\\"^>^&#xE9D9;^</Run^> ^<Span FontWeight=\\\"SemiBold\\\"^>%mnottitle%^</Span^>^</TextBlock^>^<TextBlock Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mnotdesk1% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk2%^</Span^>%mnotdesk3% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk4%^</Span^>.^</TextBlock^>^<Button Command=\\\"{StaticResource ActivateUriCommand}\\\" CommandParameter=\\\"ms-settings:privacy-feedback\\\" Margin=\\\"0,10,0,0\\\"^>^<TextBlock Margin=\\\"5,0,5,0\\\"^>%mnotbutton%^</TextBlock^>^</Button^>^</StackPanel^>\",\"Severity\":0}"
+echo "StickyMessage"="{\"Message\":\"%mtitle%\",\"LinkTitle\":\"%lm%\",\"LinkUrl\":\"https://github.com/nondetect/ORM-Insider/blob/master/readme.md\",\"DynamicXaml\":\"^<StackPanel xmlns=\\\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\\\"^>^<TextBlock Margin=\\\"0,-25,0,10\\\" Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mdesc% v%scriptver%.^</TextBlock^>^<TextBlock Style=\\\"{StaticResource SubtitleTextBlockStyle }\\\" ^>^<Run FontFamily=\\\"Segoe Fluent Icons\\\"^>^&#xE9D9;^</Run^> ^<Span FontWeight=\\\"SemiBold\\\"^>%mnottitle%^</Span^>^</TextBlock^>^<TextBlock Style=\\\"{StaticResource BodyTextBlockStyle }\\\"^>%mnotdesk1% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk2%^</Span^>%mnotdesk3% ^<Span FontWeight=\\\"SemiBold\\\"^>%mnotdesk4%^</Span^>.^</TextBlock^>^<Button Command=\\\"{StaticResource ActivateUriCommand}\\\" CommandParameter=\\\"ms-settings:privacy-feedback\\\" Margin=\\\"0,10,0,0\\\"^>^<TextBlock Margin=\\\"5,0,5,0\\\"^>%mnotdesk4%^</TextBlock^>^</Button^>^</StackPanel^>\",\"Severity\":0}"
 echo.
 )>"%Temp%\oie.reg"
 regedit /s "%Temp%\oie.reg"
@@ -189,41 +189,67 @@ goto :EOF
 :SKIP_CHECK
 cls
 echo.
-echo: $_Paste_in_Powershell = {
-echo:   $N = ^"Skip TPM Check on Dynamic Update^"; $X = @(^"' $N (c) AveYo 2021 : v4 IFEO-based with no flashing cmd window^") 
-echo:   $X+= 'C = ^"cmd /q AveYo /d/x/r pushd %%systemdrive%%\\$windows.~bt\\Sources\\Panther ^&^& mkdir Appraiser_Data.ini\\AveYo^&^"'
-echo:   $X+= 'M = ^"pushd %%allusersprofile%%^& ren vd.exe vdsldr.exe ^&robocopy ^"^"%%systemroot%%/system32/^"^" ^"^"./^"^" ^"^"vdsldr.exe^"^"^&^"'
-echo:   $X+= 'D = ^"ren vdsldr.exe vd.exe^& start vd.exe -Embedding^" : CreateObject(^"WScript.Shell^").Run C ^& M ^& D, 0, False'    
-echo:   $K = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\vdsldr.exe'
-echo:   $P = [Environment]::GetFolderPath('CommonApplicationData'); $F = join-path $P '11tpm.vbs'; $V = ^"wscript $F //B //T:5^" 
-echo:   if (test-path $K) {
-echo:     write-host -fore 0xf -back 0x4 ^"`n $N v4 already [INSTALLED]^"
-echo:   } else {
-echo:     new-item $K -force -ea 0 ^>''; set-itemproperty $K 'Debugger' $V -force -ea 0; [io.file]::WriteAllText($F, $X-join^"`r`n^")
-echo:     write-host -fore 0xf -back 0x2 ^"`n $N v4 [INSTALLED] ^"
-echo:   } ;  rmdir $([Environment]::SystemDirectory[0]+':\\$Windows.~BT\\Sources\\Panther') -rec -force -ea 0; timeout /t 2
-echo: } ; start powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^" -verb runas
+echo:$_Paste_in_Powershell = { $Code = @'
+echo: $Nfo = 'Skip TPM Check on Dynamic Update v7, AveYo 2021'
+echo: $Arg = (([environment]::get_CommandLine()-split'-[-]%% ')[1]-split'.exe[\p{P}]? ')[1]
+echo: foreach ($x in 'Product','DynamicUpdate','Telemetry') {$Arg = $Arg -replace $('\p{P}?/'+ $x +'\p{P}? \p{P}?[A-Z]+\p{P}? '),' '}
+echo: $Cli = ' /DynamicUpdate Disable /Telemetry Disable ' + $Arg; $Srv = ' /Product Server' + $Cli
+echo: $Dir = join-path $([Environment]::SystemDirectory[0..2]-join'') '$WINDOWS.~BT\Sources\'
+echo: $Cfg = join-path $Dir 'EI.cfg'; $EI = '[Channel]' +[char]13+[char]10+ '_Default' +[char]13+[char]10
+echo: $Exe = join-path $Dir 'SetupHost.exe'; $Inf = get-item -force -lit $Exe; [int]$Ver = $Inf.VersionInfo.FileBuildPart
+echo: if ($Ver -ge 22000) {$Run = $Exe + $Srv} else {$Run = $Exe + $Cli}
+echo: if ($Ver -ge 22000 -and !(test-path $Cfg)) {[io.file]::WriteAllText($Cfg, $EI)}
+echo: $D=@(); $T=@(); $A=@(); $M=[AppDomain]::CurrentDomain.DefineDynamicAssembly(1,1).DefineDynamicModule(1) 
+echo: foreach ($x in 0..2) {$D+=$M.DefineType('AveYo_'+$x,1179913,[ValueType])}; foreach ($x in 1..2) {$D+=$D[$x].MakeByRefType()}
+echo: $S=[string]; $I=[int32]; $U=[uintptr]; $y=0; $z=0;  foreach ($x in $U,$U,$I,$I) {$9=$D[2].DefineField('f'+$y++,$x,6)}
+echo: foreach ($x in $I,$S,$S,$S,$I,$I,$I,$I,$I,$I,$I,$I,[int16],[int16],$U,$U,$U,$U) {$9=$D[1].DefineField('f'+$z++,$x,6)}
+echo: $9=$D[0].DefinePInvokeMethod('CreateProcess','kernel32',8214,1,[void],($S,$S,$I,$I,[bool],$I,$I,$S,$D[3],$D[4]),1,4)
+echo: $9=$D[0].DefinePInvokeMethod('DebugActiveProcessStop','kernel32',8214,1,[void],($I),1,4)
+echo: foreach ($x in 0..2) {$T+=$D[$x].CreateType()}; foreach ($x in 1..2) {$A+=[Activator]::CreateInstance($T[$x])}
+echo: $R=$null, $Run, $null, $null, $false, 0x02000011, $null, $null, $A[0], $A[1] 
+echo: $T[0].GetMethod('CreateProcess').invoke(0, $R); $T[0].GetMethod('DebugActiveProcessStop').invoke(0, $R[9].f2)
+echo: $W=get-process -pid $R[9].f2 -ea 0; for (;;) {sleep 1; if (0-eq $R[9].f2 -or $null-eq $W -or $W.HasExited) {return} }
+echo:'@ -replace '\r?\n^|\r', '; ' 
+echo: $IFEO = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
+echo: $Prog = join-path $([Environment]::SystemDirectory[0..2] -join '') '$WINDOWS.~BT\Sources\SetupHost.exe'
+echo: $Skip = ^"powershell -win 1 -nop -c iex (get-itemproperty '$IFEO\0' 'Code' -ea 0).Code; write-host --%%^"
+echo: if (test-path ^"$IFEO\0^") {
+echo:    write-host -fore 0xf -back 0x4 ^"`n Skip TPM Check on Dynamic Update v7 already [INSTALLED]^"  
+echo: } else {                              
+echo:   new-item ^"$IFEO\0^" -force -ea 0 ^>'' 
+echo:   set-itemproperty ^"$IFEO\0^" 'Debugger' $Skip -force -ea 0; set-itemproperty ^"$IFEO\0^" 'Code' $Code -force -ea 0
+echo:   set-itemproperty ^"$IFEO\0^" 'FilterFullPath' $Prog -force -ea 0; set-itemproperty $IFEO 'UseFilter' 1 -type dword -force -ea 0
+echo:   write-host -fore 0xf -back 0x2 ^"`n Skip TPM Check on Dynamic Update v7 [INSTALLED]^" } 
+echo: remove-item $($IFEO -replace 'SetupHost', 'vdsldr') -rec -force -ea 0 ^>''; rmdir (split-path $Prog) -rec -force -ea 0 ^>''
+echo: $N = 'Skip TPM Check on Dynamic Update'
+echo: $U = 'root\subscription'; $C = gwmi -Class CommandLineEventConsumer -Namespace $U -Filter ^"Name='$N'^" -ea 0 
+echo: $B = gwmi -Class __FilterToConsumerBinding -Namespace $U -Filter ^"Filter = ^"^"__eventfilter.name='$N'^"^"^" -ea 0
+echo: $F = gwmi -Class __EventFilter -NameSpace $U -Filter ^"Name='$N'^" -ea 0; $B,$C,$F ^|%% {$_^|rwmi -ea 0}; timeout /t 2
+echo:} ; start -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
 goto :EOF
-
 
 :REMOVE_SKIP_CHECK
 cls
 echo.
-echo: $_Paste_in_Powershell = {
-echo:   $N = ^"Skip TPM Check on Dynamic Update^"; $X = @(^"' $N (c) AveYo 2021 : v4 IFEO-based with no flashing cmd window^") 
-echo:   $X+= 'C = ^"cmd /q AveYo /d/x/r pushd %%systemdrive%%\\$windows.~bt\\Sources\\Panther ^&^& mkdir Appraiser_Data.ini\\AveYo^&^"'
-echo:   $X+= 'M = ^"pushd %%allusersprofile%%^& ren vd.exe vdsldr.exe ^&robocopy ^"^"%%systemroot%%/system32/^"^" ^"^"./^"^" ^"^"vdsldr.exe^"^"^&^"'
-echo:   $X+= 'D = ^"ren vdsldr.exe vd.exe^& start vd.exe -Embedding^" : CreateObject(^"WScript.Shell^").Run C ^& M ^& D, 0, False'    
-echo:   $K = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\vdsldr.exe'
-echo:   $P = [Environment]::GetFolderPath('CommonApplicationData'); $F = join-path $P '11tpm.vbs'; $V = ^"wscript $F //B //T:5^" 
-echo:   if (test-path $K) {
-echo:     remove-item $K -force -ea 0 ^>''; del $F -force -ea 0; del (join-path $P 'vd.exe') -force -ea 0
-echo:     write-host -fore 0xf -back 0xd ^"`n $N v4 [REMOVED]^"
-echo:   } else {
-echo:     write-host -fore 0xf -back 0x4 ^"`n $N v4 already [REMOVED]^"
-echo:   } ;  rmdir $([Environment]::SystemDirectory[0]+':\\$Windows.~BT\\Sources\\Panther') -rec -force -ea 0; timeout /t 2
-echo: } ; start powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^" -verb runas
+echo:$_Paste_in_Powershell = { $Code = @'
+echo: $Nfo = 'Skip TPM Check on Dynamic Update v7, AveYo 2021'
+echo:'@ -replace '\r?\n^|\r', '; ' 
+echo: $IFEO = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
+echo: $Prog = join-path $([Environment]::SystemDirectory[0..2] -join '') '$WINDOWS.~BT\Sources\SetupHost.exe'
+echo: $Skip = ^"powershell -win 1 -nop -c iex (get-itemproperty '$IFEO\0' 'Code' -ea 0).Code; write-host --%%^"
+echo: if (test-path ^"$IFEO\0^") {
+echo:   remove-item $IFEO -rec -force -ea 0 ^>''
+echo:   write-host -fore 0xf -back 0xd ^"`n Skip TPM Check on Dynamic Update v7 [REMOVED]^" 
+echo: } else {                              
+echo:    write-host -fore 0xf -back 0x4 ^"`n Skip TPM Check on Dynamic Update v7 already [REMOVED]^"  } 
+echo: remove-item $($IFEO -replace 'SetupHost', 'vdsldr') -rec -force -ea 0 ^>''; rmdir (split-path $Prog) -rec -force -ea 0 ^>''
+echo: $N = 'Skip TPM Check on Dynamic Update'
+echo: $U = 'root\subscription'; $C = gwmi -Class CommandLineEventConsumer -Namespace $U -Filter ^"Name='$N'^" -ea 0 
+echo: $B = gwmi -Class __FilterToConsumerBinding -Namespace $U -Filter ^"Filter = ^"^"__eventfilter.name='$N'^"^"^" -ea 0
+echo: $F = gwmi -Class __EventFilter -NameSpace $U -Filter ^"Name='$N'^" -ea 0; $B,$C,$F ^|%% {$_^|rwmi -ea 0}; timeout /t 2
+echo:} ; start -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
 goto :EOF
+
 
 :EX_SKIP_CHECK
 echo.%agrs%
@@ -332,7 +358,7 @@ set "crpdesk=Идеально подходит, если вы хотите оз�
 set "dstitle=На вашем устройстве установлена новейшая версия сборки"
 set "dsdesk=Информация о текущей версии доступна в разделе Система - О системе"
 set "dsltitle=Последние изменения в сборке"
-set "dsbutton=Открыть О системе"
+set "dsbutton=О системе"
 set "conftitle=Посмотреть текущие параметры программы предварительной оценки"
 set "confrlink=Если хотите изменить настройки Windows Insider или прекратить участие, пожалуйста используйте скрипт"
 set "lm=Узнать больше"
@@ -343,8 +369,7 @@ set "mnottitle=Уведомление о настройках телеметри
 set "mnotdesk1=Программа предварительной оценки Windows требует, чтобы в настройках сбора диагностических данных была включена"
 set "mnotdesk2=Отправка необязательных диагностических данных"
 set "mnotdesk3=. Вы можете проверить или изменить свои текущие настройки в"
-set "mnotdesk4=Диагностика и отзывы"
-set "mnotbutton=Открыть Диагностика и отзывы"
+set "mnotdesk4=Диагностика и Отзывы"
 set "unrtitle=Прекратить получение предварительных сборок"
 set "unrtogtitle=Отменить регистрацию этого устройства после выхода следующей версии Windows"
 set "unrtogdesk=Доступно для каналов бета-версии и предварительного выпуска. Включите этот параметр, чтобы прекратить получение предварительных сборок после запуска следующего общедоступного основного выпуска Windows. До этого момента ваше устройство будет получать сборки для предварительной оценки, чтобы поддерживать его безопасность. Все ваши приложения, драйверы и параметры будут сохранены даже после того, как вы перестанете получать предварительные сборки."
@@ -387,7 +412,7 @@ set "crpdesk=Ideal if you want to preview fixes and certain key features, plus g
 set "dstitle=You're on the latest build for your device"
 set "dsdesk=Information about the current version is available in the section System - About"
 set "dsltitle=Latest build notes"
-set "dsbutton=Open About System"
+set "dsbutton=About System"
 set "conftitle=Your Insider settings"
 set "confrlink=If you want to change settings of the enrollment or stop receiving Insider Preview builds, please use the script."
 set "lm=Learn more"
@@ -398,8 +423,7 @@ set "mnottitle=Telemetry settings notice"
 set "mnotdesk1=Windows Insider Program requires diagnostic data collection to be enabled "
 set "mnotdesk2=Send optional diagnostic data"
 set "mnotdesk3=. You can verify or modify your current settings in "
-set "mnotdesk4=Diagnostics and feedback"
-set "mnotbutton=Open Diagnostics and feedback"
+set "mnotdesk4=Diagnostics and Feedback"
 set "unrtitle=Stop getting preview builds"
 set "unrtogtitle=Unenroll this device when the next version of Windows releases"
 set "unrtogdesk=Available for Beta and Release Preview channels. Turn this on to stop getting preview builds when the next major release of Windows launches to the public. Until then, your device will continue to get Insider builds to keep it secure. You'll keep all your apps, drivers and settings even after you stop getting preview builds."
