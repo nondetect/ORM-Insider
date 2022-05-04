@@ -1,7 +1,7 @@
 @echo off
-set "scriptver=2.9.1"
+set "scriptver=2.9.4"
 title ORM-Insider %scriptver%
-mode con:cols=90 lines=28
+mode con:cols=90 lines=31
 chcp 866 >nul
 goto :LOCALE
 
@@ -40,6 +40,8 @@ bcdedit /enum {current} | findstr /I /R /C:"^flightsigning *Yes$" >nul 2>&1
 if %ERRORLEVEL% equ 0 set "FlightSigningEnabled=1"
 
 :CHOICE_MENU
+REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe" /ve >nul
+IF %errorlevel% EQU 0 (set "mcr=%ESC%[41;30m %mcd% %ESC%[40;32m") else (set "mcr=%ESC%[42;30m %mce% %ESC%[40;32m")
 cls
 color 2
 set "WSH=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsSelfHost"
@@ -60,15 +62,18 @@ echo.%me%3] - %m1% Release Preview Channel
 echo.%agre%
 echo.%agrd%
 echo.%agre%
-echo.%m2%
+echo.%mcc% - %mcr%
+echo.%agrs%
 echo.%agre%
-echo.%m3%
+echo.%me%%m2%
+echo.%agre%
+echo.%me%%m3%
 echo.%agre%
 echo.%agrd%
 echo.%agre%
-echo.%m4%
+echo.%me%%m4%
 echo.%agre%
-echo.%m5%
+echo.%me%%m5%
 echo.%agrs%
 echo.%agre%
 choice /C:1234567 /N /M "%mch% [1,2,3,4,5,6,7] : "
@@ -186,104 +191,21 @@ regedit /s "%Temp%\oie.reg"
 del /f /q "%Temp%\oie.reg"
 goto :EOF
 
-:SKIP_CHECK
-cls
-echo.
-echo:$_Paste_in_Powershell = { $Code = @'
-echo: $Nfo = 'Skip TPM Check on Dynamic Update v7, AveYo 2021'
-echo: $Arg = (([environment]::get_CommandLine()-split'-[-]%% ')[1]-split'.exe[\p{P}]? ')[1]
-echo: foreach ($x in 'Product','DynamicUpdate','Telemetry') {$Arg = $Arg -replace $('\p{P}?/'+ $x +'\p{P}? \p{P}?[A-Z]+\p{P}? '),' '}
-echo: $Cli = ' /DynamicUpdate Disable /Telemetry Disable ' + $Arg; $Srv = ' /Product Server' + $Cli
-echo: $Dir = join-path $([Environment]::SystemDirectory[0..2]-join'') '$WINDOWS.~BT\Sources\'
-echo: $Cfg = join-path $Dir 'EI.cfg'; $EI = '[Channel]' +[char]13+[char]10+ '_Default' +[char]13+[char]10
-echo: $Exe = join-path $Dir 'SetupHost.exe'; $Inf = get-item -force -lit $Exe; [int]$Ver = $Inf.VersionInfo.FileBuildPart
-echo: if ($Ver -ge 22000) {$Run = $Exe + $Srv} else {$Run = $Exe + $Cli}
-echo: if ($Ver -ge 22000 -and !(test-path $Cfg)) {[io.file]::WriteAllText($Cfg, $EI)}
-echo: $D=@(); $T=@(); $A=@(); $M=[AppDomain]::CurrentDomain.DefineDynamicAssembly(1,1).DefineDynamicModule(1) 
-echo: foreach ($x in 0..2) {$D+=$M.DefineType('AveYo_'+$x,1179913,[ValueType])}; foreach ($x in 1..2) {$D+=$D[$x].MakeByRefType()}
-echo: $S=[string]; $I=[int32]; $U=[uintptr]; $y=0; $z=0;  foreach ($x in $U,$U,$I,$I) {$9=$D[2].DefineField('f'+$y++,$x,6)}
-echo: foreach ($x in $I,$S,$S,$S,$I,$I,$I,$I,$I,$I,$I,$I,[int16],[int16],$U,$U,$U,$U) {$9=$D[1].DefineField('f'+$z++,$x,6)}
-echo: $9=$D[0].DefinePInvokeMethod('CreateProcess','kernel32',8214,1,[void],($S,$S,$I,$I,[bool],$I,$I,$S,$D[3],$D[4]),1,4)
-echo: $9=$D[0].DefinePInvokeMethod('DebugActiveProcessStop','kernel32',8214,1,[void],($I),1,4)
-echo: foreach ($x in 0..2) {$T+=$D[$x].CreateType()}; foreach ($x in 1..2) {$A+=[Activator]::CreateInstance($T[$x])}
-echo: $R=$null, $Run, $null, $null, $false, 0x02000011, $null, $null, $A[0], $A[1] 
-echo: $T[0].GetMethod('CreateProcess').invoke(0, $R); $T[0].GetMethod('DebugActiveProcessStop').invoke(0, $R[9].f2)
-echo: $W=get-process -pid $R[9].f2 -ea 0; for (;;) {sleep 1; if (0-eq $R[9].f2 -or $null-eq $W -or $W.HasExited) {return} }
-echo:'@ -replace '\r?\n^|\r', '; ' 
-echo: $IFEO = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
-echo: $Prog = join-path $([Environment]::SystemDirectory[0..2] -join '') '$WINDOWS.~BT\Sources\SetupHost.exe'
-echo: $Skip = ^"powershell -win 1 -nop -c iex (get-itemproperty '$IFEO\0' 'Code' -ea 0).Code; write-host --%%^"
-echo: if (test-path ^"$IFEO\0^") {
-echo:    write-host -fore 0xf -back 0x4 ^"`n Skip TPM Check on Dynamic Update v7 already [INSTALLED]^"  
-echo: } else {                              
-echo:   new-item ^"$IFEO\0^" -force -ea 0 ^>'' 
-echo:   set-itemproperty ^"$IFEO\0^" 'Debugger' $Skip -force -ea 0; set-itemproperty ^"$IFEO\0^" 'Code' $Code -force -ea 0
-echo:   set-itemproperty ^"$IFEO\0^" 'FilterFullPath' $Prog -force -ea 0; set-itemproperty $IFEO 'UseFilter' 1 -type dword -force -ea 0
-echo:   write-host -fore 0xf -back 0x2 ^"`n Skip TPM Check on Dynamic Update v7 [INSTALLED]^" } 
-echo: remove-item $($IFEO -replace 'SetupHost', 'vdsldr') -rec -force -ea 0 ^>''; rmdir (split-path $Prog) -rec -force -ea 0 ^>''
-echo: $N = 'Skip TPM Check on Dynamic Update'
-echo: $U = 'root\subscription'; $C = gwmi -Class CommandLineEventConsumer -Namespace $U -Filter ^"Name='$N'^" -ea 0 
-echo: $B = gwmi -Class __FilterToConsumerBinding -Namespace $U -Filter ^"Filter = ^"^"__eventfilter.name='$N'^"^"^" -ea 0
-echo: $F = gwmi -Class __EventFilter -NameSpace $U -Filter ^"Name='$N'^" -ea 0; $B,$C,$F ^|%% {$_^|rwmi -ea 0}; timeout /t 2
-echo:} ; start -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
-goto :EOF
-
-:REMOVE_SKIP_CHECK
-cls
-echo.
-echo:$_Paste_in_Powershell = { $Code = @'
-echo: $Nfo = 'Skip TPM Check on Dynamic Update v7, AveYo 2021'
-echo:'@ -replace '\r?\n^|\r', '; ' 
-echo: $IFEO = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
-echo: $Prog = join-path $([Environment]::SystemDirectory[0..2] -join '') '$WINDOWS.~BT\Sources\SetupHost.exe'
-echo: $Skip = ^"powershell -win 1 -nop -c iex (get-itemproperty '$IFEO\0' 'Code' -ea 0).Code; write-host --%%^"
-echo: if (test-path ^"$IFEO\0^") {
-echo:   remove-item $IFEO -rec -force -ea 0 ^>''
-echo:   write-host -fore 0xf -back 0xd ^"`n Skip TPM Check on Dynamic Update v7 [REMOVED]^" 
-echo: } else {                              
-echo:    write-host -fore 0xf -back 0x4 ^"`n Skip TPM Check on Dynamic Update v7 already [REMOVED]^"  } 
-echo: remove-item $($IFEO -replace 'SetupHost', 'vdsldr') -rec -force -ea 0 ^>''; rmdir (split-path $Prog) -rec -force -ea 0 ^>''
-echo: $N = 'Skip TPM Check on Dynamic Update'
-echo: $U = 'root\subscription'; $C = gwmi -Class CommandLineEventConsumer -Namespace $U -Filter ^"Name='$N'^" -ea 0 
-echo: $B = gwmi -Class __FilterToConsumerBinding -Namespace $U -Filter ^"Filter = ^"^"__eventfilter.name='$N'^"^"^" -ea 0
-echo: $F = gwmi -Class __EventFilter -NameSpace $U -Filter ^"Name='$N'^" -ea 0; $B,$C,$F ^|%% {$_^|rwmi -ea 0}; timeout /t 2
-echo:} ; start -verb runas powershell -args ^"-nop -c ^& {`n`n$($_Paste_in_Powershell-replace'^"','\^"')}^"
-goto :EOF
-
-
 :EX_SKIP_CHECK
-echo.%agrs%
-echo.%agre%
-echo.%apc%
-call :SKIP_CHECK >%temp%\oie.ps1 
-powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }"
-del /f /q "%temp%\oie.ps1"
-echo.%agre%
-echo.%apd%
-if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT
-echo.%agrs%
-echo.%agre%
-echo.%pte%
-echo.%agrs%
-pause > nul
-goto :EOF
+if not exist %temp%\sc.cmd (
+    powershell -command "& {Invoke-WebRequest -Uri %sclink% -OutFile %temp%\sc.cmd }" 1>NUL 2>NUL
+)
+powershell -command "& { %temp%\sc.cmd install }" 1>NUL 2>NUL
+if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT else
+goto :CHOICE_MENU
 
 :EX_REMOVE_SKIP_CHECK
-echo.%agrs%
-echo.%agre%
-echo.%apc%
-call :REMOVE_SKIP_CHECK >%temp%\oie.ps1
-powershell -command " & { Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; %temp%\oie.ps1 }"
-del /f /q "%temp%\oie.ps1"
-if %FlightSigningEnabled% neq 0 goto :ASK_FOR_REBOOT
-echo.%agre%
-echo.%apd%
-echo.%agrs%
-echo.%agre%
-echo.%pte%
-echo.%agrs%
-pause > nul
-goto :EOF
+if not exist %temp%\sc.cmd (
+    powershell -command "& {Invoke-WebRequest -Uri %sclink% -OutFile %temp%\sc.cmd }" 1>NUL 2>NUL
+)
+powershell -command "& { %temp%\sc.cmd remove }" 1>NUL 2>NUL
+if %FlightSigningEnabled% neq 1 goto :ASK_FOR_REBOOT else
+goto :CHOICE_MENU
 
 :ENROLL
 echo.%agrs%
@@ -303,17 +225,25 @@ pause >nul
 exit
 
 :ENROLL_SKIP_CHECK
+echo.%agrs%
+echo.%agre%
+echo.%apc%
 call :RESET_INSIDER_CONFIG 1>NUL 2>NUL
 call :ADD_INSIDER_CONFIG 1>NUL 2>NUL
 bcdedit /set {current} flightsigning yes >nul 2>&1
-goto :EX_SKIP_CHECK
-
+echo.%agre%
+echo.%apd%
+call :EX_SKIP_CHECK
 
 :STOP_INSIDER
+echo.%agrs%
+echo.%agre%
+echo.%apc%
 call :RESET_INSIDER_CONFIG 1>nul 2>nul
 bcdedit /deletevalue {current} flightsigning >nul 2>&1
-goto :EX_REMOVE_SKIP_CHECK
-
+echo.%agre%
+echo.%apd%
+call :EX_REMOVE_SKIP_CHECK
 
 :ASK_FOR_REBOOT
 echo.%agrs%
@@ -332,71 +262,77 @@ if errorlevel 2 exit
 if errorlevel 1 ( shutdown -r -t 0 )
 
 :RU_LOCALE
-set "chadmin=^|                      ╨Э╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╨╛ ╨╖╨░╨┐╤Г╤Б╨║╨░╤В╤М ╨╛╤В ╨╕╨╝╨╡╨╜╨╕ ╨Р╨┤╨╝╨╕╨╜╨╕╤Б╤В╤А╨░╤В╨╛╤А╨░                      ^|"
-set "chbuild=^|       ╨Ф╨╗╤П ╤А╨░╨▒╨╛╤В╤Л ╤Б╨║╤А╨╕╨┐╤В╨░ ╨╜╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╨░ ╨▓╨╡╤А╤Б╨╕╤П Windows 10 v1809 ╤Б╨▒╨╛╤А╨║╨░ %defbuild% ╨╕╨╗╨╕ ╨▓╤Л╤И╨╡      ^|"
-set "m1=╨Я╨╡╤А╨╡╨╣╤В╨╕ ╨╜╨░"
-set "m2=^|                    [4] - ╨Ю╤В╨║╨╗╤О╤З╨╕╤В╤М ╨┐╤А╨╛╨▓╨╡╤А╨║╤Г ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╨╕                              ^|"
-set "m3=^|                    [5] - ╨Т╨║╨╗╤О╤З╨╕╤В╤М ╨┐╤А╨╛╨▓╨╡╤А╨║╤Г ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╨╕                               ^|"
-set "m4=^|                    [6] - ╨Я╤А╨╡╨║╤А╨░╤В╨╕╤В╤М ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨Ш╨╜╤Б╨░╨╣╨┤╨╡╤А╤Б╨║╨╕╤Е ╤Б╨▒╨╛╤А╨╛╨║                      ^|"
-set "m5=^|                    [7] - ╨Т╤Л╤Е╨╛╨┤ ╨▒╨╡╨╖ ╨▓╨╜╨╡╤Б╨╡╨╜╨╕╤П ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╨╣                                  ^|"
-set "m6=^|                    ╨Ю╤В╨║╨╗╤О╤З╨╕╤В╤М ╨┐╤А╨╛╨▓╨╡╤А╨║╤Г ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╨╕?                                   ^|"
-set "m7=1] - ╨Ф╨░                                                            ^|"
-set "m8=2] - ╨Э╨╡╤В                                                           ^|"
-set "mch=| ╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤Б╨▓╨╛╨╣ ╨▓╤Л╨▒╨╛╤А"
-set "apc=^|                    ╨Я╤А╨╕╨╝╨╡╨╜╨╡╨╜╨╕╨╡ ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╨╣...                                             ^|"
-set "apd=^|                    ╨У╨╛╤В╨╛╨▓╨╛                                                              ^|"
-set "pte=^| ╨Э╨░╨╢╨╝╨╕╤В╨╡ ╨╗╤О╨▒╤Г╤О ╨║╨╜╨╛╨┐╨║╤Г ╨┤╨╗╤П ╨▓╤Л╤Е╨╛╨┤╨░                                                        ^|"
-set "rtitle=^|                 ╨Э╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╨░ ╨┐╨╡╤А╨╡╨╖╨░╨│╤А╤Г╨╖╨║╨░ ╤З╤В╨╛╨▒╤Л ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╤П ╨▓╤Б╤В╤Г╨┐╨╕╨╗╨╕ ╨▓ ╤Б╨╕╨╗╤Г                ^|"
-set "rdesk=^|                        ╨е╨╛╤В╨╕╤В╨╡ ╨┐╨╡╤А╨╡╨╖╨░╨│╤А╤Г╨╖╨╕╤В╤М ╨║╨╛╨╝╨┐╤М╤О╤В╨╡╤А ╤Б╨╡╨╣╤З╨░╤Б?                          ^|"
-set "actitle=╨г╤З╨╡╤В╨╜╨░╤П ╨╖╨░╨┐╨╕╤Б╤М ╤Г╤З╨░╤Б╤В╨╜╨╕╨║╨░ ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕ Windows"
-set "acdesc=╨Э╨╡╤В ╨┐╤А╨╕╨▓╤П╨╖╨░╨╜╨╜╨╛╨╣ ╤Г╤З╤С╤В╨╜╨╛╨╣ ╨╖╨░╨┐╨╕╤Б╨╕"
-set "acbutton=╨Ш╨╖╨╝╨╡╨╜╨╕╤В╤М"
-set "cdevdesc=╨Ш╨┤╨╡╨░╨╗╤М╨╜╨╛ ╨┐╨╛╨┤╤Е╨╛╨┤╨╕╤В ╨┤╨╗╤П ╤В╨╡╤Е╨╜╨╕╤З╨╡╤Б╨║╨╕ ╨┐╨╛╨┤╨║╨╛╨▓╨░╨╜╨╜╤Л╤Е ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╨╡╨╣. ╨Я╨╡╤А╨▓╤Л╨╝╨╕ ╨┐╨╛╨╗╤Г╤З╨░╨╣╤В╨╡ ╨┤╨╛╤Б╤В╤Г╨┐ ╨║ ╨╜╨╛╨▓╨╡╨╣╤И╨╕╨╝ ╤Б╨▒╨╛╤А╨║╨░╨╝ Windows 11 ╨╜╨░ ╤Б╨░╨╝╨╛╨╝ ╤А╨░╨╜╨╜╨╡╨╝ ╤Н╤В╨░╨┐╨╡ ╤Ж╨╕╨║╨╗╨░ ╤А╨░╨╖╤А╨░╨▒╨╛╤В╨║╨╕ ╤Б ╨╜╨╛╨▓╨╡╨╣╤И╨╕╨╝ ╨║╨╛╨┤╨╛╨╝. ╨Т╤Л ╨╖╨░╨╝╨╡╤В╨╕╤В╨╡ ╨╜╨╡╨║╨╛╤В╨╛╤А╤Л╨╡ ╤И╨╡╤А╨╛╤Е╨╛╨▓╨░╤В╨╛╤Б╤В╨╕ ╨╕ ╨╜╨╕╨╖╨║╤Г╤О ╤Б╤В╨░╨▒╨╕╨╗╤М╨╜╨╛╤Б╤В╤М."
-set "cdevwar=╨Ь╤Л ╤А╨╡╨║╨╛╨╝╨╡╨╜╨┤╤Г╨╡╨╝ Dev Channel ╤В╨╛╨╗╤М╨║╨╛ ╨▓ ╤В╨╛╨╝ ╤Б╨╗╤Г╤З╨░╨╡, ╨╡╤Б╨╗╨╕ ╨▓╤Л ╨░╨║╤В╨╕╨▓╨╜╨╛ ╨▓╤Л╨┐╨╛╨╗╨╜╤П╨╡╤В╨╡ ╤А╨╡╨╖╨╡╤А╨▓╨╜╨╛╨╡ ╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨╕╨╡ ╨┤╨░╨╜╨╜╤Л╤Е ╨╕ ╨▓╨░╨╝ ╨║╨╛╨╝╤Д╨╛╤А╤В╨╜╨╛ ╨▓╤Л╨┐╨╛╨╗╨╜╤П╤В╤М ╤З╨╕╤Б╤В╤Г╤О ╤Г╤Б╤В╨░╨╜╨╛╨▓╨║╤Г Windows. ╨н╤В╨╛╤В ╨║╨░╨╜╨░╨╗ ╨┐╨╛╨╗╤Г╤З╨░╨╡╤В ╤Б╨▒╨╛╤А╨║╨╕, ╨║╨╛╤В╨╛╤А╤Л╨╡ ╨╕╨╝╨╡╤О╤В ╨╜╨╡╨║╨╛╤В╨╛╤А╤Л╨╡ ╤И╨╡╤А╨╛╤Е╨╛╨▓╨░╤В╨╛╤Б╤В╨╕ ╨╕ ╨╝╨╛╨│╤Г╤В ╨▒╤Л╤В╤М ╨╜╨╡╤Б╤В╨░╨▒╨╕╨╗╤М╨╜╤Л╨╝╨╕. ╨Я╨╛╤Б╨╗╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨║╨╕ ╤Б╨▒╨╛╤А╨║╨╕ ╨╕╨╖ Dev Channel ╨╡╨┤╨╕╨╜╤Б╤В╨▓╨╡╨╜╨╜╤Л╨╣ ╤Б╨┐╨╛╤Б╨╛╨▒ ╨┐╨╡╤А╨╡╨╣╤В╨╕ ╨╜╨░ ╨┤╤А╤Г╨│╨╛╨╣ ╨║╨░╨╜╨░╨╗ ╨╕╨╗╨╕ ╨╛╤В╨╝╨╡╨╜╨╕╤В╤М ╤А╨╡╨│╨╕╤Б╤В╤А╨░╤Ж╨╕╤О ╤Н╤В╨╛╨│╨╛ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░ - ╤Н╤В╨╛ ╨▓╤Л╨┐╨╛╨╗╨╜╨╕╤В╤М ╤З╨╕╤Б╤В╤Г╤О ╤Г╤Б╤В╨░╨╜╨╛╨▓╨║╤Г Windows. ╨Т╨░╨╝ ╨╜╤Г╨╢╨╜╨╛ ╨▒╤Г╨┤╨╡╤В ╨▓╤А╤Г╤З╨╜╤Г╤О ╤Б╨╛╨╖╨┤╨░╤В╤М ╤А╨╡╨╖╨╡╤А╨▓╨╜╤Г╤О ╨║╨╛╨┐╨╕╤О ╨╕ ╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╕╤В╤М ╨▓╤Б╨╡ ╨┤╨░╨╜╨╜╤Л╨╡, ╨║╨╛╤В╨╛╤А╤Л╨╡ ╨▓╤Л ╤Е╨╛╤В╨╕╤В╨╡ ╤Б╨╛╤Е╤А╨░╨╜╨╕╤В╤М."
-set "cbetadesc=╨Ш╨┤╨╡╨░╨╗╤М╨╜╨╛ ╨┐╨╛╨┤╤Е╨╛╨┤╨╕╤В ╨┤╨╗╤П ╤А╨░╨╜╨╜╨╕╤Е ╨┐╨╛╤Б╨╗╨╡╨┤╨╛╨▓╨░╤В╨╡╨╗╨╡╨╣. ╨н╤В╨╕ ╤Б╨▒╨╛╤А╨║╨╕ Windows 11 ╨▒╨╛╨╗╨╡╨╡ ╨╜╨░╨┤╨╡╨╢╨╜╤Л, ╤З╨╡╨╝ ╤Б╨▒╨╛╤А╨║╨╕ ╨╕╨╖ ╨║╨░╨╜╨░╨╗╨░ Dev, ╨▒╨╗╨░╨│╨╛╨┤╨░╤А╤П ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П╨╝, ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╨╝╤Л╨╝ ╨║╨╛╤А╨┐╨╛╤А╨░╤Ж╨╕╨╡╨╣ Microsoft. ╨Т╨░╤И ╨╛╤В╨╖╤Л╨▓ ╨╛╨║╨░╨╖╤Л╨▓╨░╨╡╤В ╨╖╨╜╨░╤З╨╕╤В╨╡╨╗╤М╨╜╨╛╨╡ ╨▓╨╛╨╖╨┤╨╡╨╣╤Б╤В╨▓╨╕╨╡."
-set "crpdesk=╨Ш╨┤╨╡╨░╨╗╤М╨╜╨╛ ╨┐╨╛╨┤╤Е╨╛╨┤╨╕╤В, ╨╡╤Б╨╗╨╕ ╨▓╤Л ╤Е╨╛╤В╨╕╤В╨╡ ╨╛╨╖╨╜╨░╨║╨╛╨╝╨╕╤В╤М╤Б╤П ╤Б ╨╕╤Б╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П╨╝╨╕ ╨╕ ╨╜╨╡╨║╨╛╤В╨╛╤А╤Л╨╝╨╕ ╨║╨╗╤О╤З╨╡╨▓╤Л╨╝╨╕ ╤Д╤Г╨╜╨║╤Ж╨╕╤П╨╝╨╕, ╨░ ╤В╨░╨║╨╢╨╡ ╨┐╨╛╨╗╤Г╤З╨╕╤В╤М ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤М ╨┤╨╛╤Б╤В╤Г╨┐╨░ ╨║ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨╣ ╨▓╨╡╤А╤Б╨╕╨╕ Windows, ╨┐╤А╨╡╨╢╨┤╨╡ ╤З╨╡╨╝ ╨╛╨╜╨░ ╤Б╤В╨░╨╜╨╡╤В ╨╛╨▒╤Й╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛╨╣ ╨┤╨╗╤П ╨▓╤Б╨╡╨│╨╛ ╨╝╨╕╤А╨░. ╨н╤В╨╛╤В ╨║╨░╨╜╨░╨╗ ╤В╨░╨║╨╢╨╡ ╤А╨╡╨║╨╛╨╝╨╡╨╜╨┤╤Г╨╡╤В╤Б╤П ╨┤╨╗╤П ╨║╨╛╨╝╨╝╨╡╤А╤З╨╡╤Б╨║╨╕╤Е ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╨╡╨╣."
-set "dstitle=╨Э╨░ ╨▓╨░╤И╨╡╨╝ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨░ ╨╜╨╛╨▓╨╡╨╣╤И╨░╤П ╨▓╨╡╤А╤Б╨╕╤П ╤Б╨▒╨╛╤А╨║╨╕"
-set "dsdesk=╨Ш╨╜╤Д╨╛╤А╨╝╨░╤Ж╨╕╤П ╨╛ ╤В╨╡╨║╤Г╤Й╨╡╨╣ ╨▓╨╡╤А╤Б╨╕╨╕ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╨░ ╨▓ ╤А╨░╨╖╨┤╨╡╨╗╨╡ ╨б╨╕╤Б╤В╨╡╨╝╨░ - ╨Ю ╤Б╨╕╤Б╤В╨╡╨╝╨╡"
-set "dsltitle=╨Я╨╛╤Б╨╗╨╡╨┤╨╜╨╕╨╡ ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╤П ╨▓ ╤Б╨▒╨╛╤А╨║╨╡"
-set "dsbutton=╨Ю ╤Б╨╕╤Б╤В╨╡╨╝╨╡"
-set "conftitle=╨Я╨╛╤Б╨╝╨╛╤В╤А╨╡╤В╤М ╤В╨╡╨║╤Г╤Й╨╕╨╡ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕"
-set "confrlink=╨Х╤Б╨╗╨╕ ╤Е╨╛╤В╨╕╤В╨╡ ╨╕╨╖╨╝╨╡╨╜╨╕╤В╤М ╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕ Windows Insider ╨╕╨╗╨╕ ╨┐╤А╨╡╨║╤А╨░╤В╨╕╤В╤М ╤Г╤З╨░╤Б╤В╨╕╨╡, ╨┐╨╛╨╢╨░╨╗╤Г╨╣╤Б╤В╨░ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╣╤В╨╡ ╤Б╨║╤А╨╕╨┐╤В"
-set "lm=╨г╨╖╨╜╨░╤В╤М ╨▒╨╛╨╗╤М╤И╨╡"
-set "mtitle=╨г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╛ ╨╖╨░╤А╨╡╨│╨╕╤Б╤В╤А╨╕╤А╨╛╨▓╨░╨╜╨╛ ╤Б ╨┐╨╛╨╝╨╛╤Й╤М╤О ORM-Insider"
-set "mdesc=╨н╤В╨╛ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╛ ╨▒╤Л╨╗╨╛ ╨╖╨░╤А╨╡╨│╨╕╤Б╤В╤А╨╕╤А╨╛╨▓╨░╨╜╨╛ ╨▓ ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╨╡ ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕ Windows ╤Б ╨┐╨╛╨╝╨╛╤Й╤М╤О ORM-Insider"
-set "aco=╨Т╤Л╨▒╤А╨░╨╜╨╜╤Л╨╡ ╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕"
-set "mnottitle=╨г╨▓╨╡╨┤╨╛╨╝╨╗╨╡╨╜╨╕╨╡ ╨╛ ╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨░╤Е ╤В╨╡╨╗╨╡╨╝╨╡╤В╤А╨╕╨╕"
-set "mnotdesk1=╨Я╤А╨╛╨│╤А╨░╨╝╨╝╨░ ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕ Windows ╤В╤А╨╡╨▒╤Г╨╡╤В, ╤З╤В╨╛╨▒╤Л ╨▓ ╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨░╤Е ╤Б╨▒╨╛╤А╨░ ╨┤╨╕╨░╨│╨╜╨╛╤Б╤В╨╕╤З╨╡╤Б╨║╨╕╤Е ╨┤╨░╨╜╨╜╤Л╤Е ╨▒╤Л╨╗╨░ ╨▓╨║╨╗╤О╤З╨╡╨╜╨░"
-set "mnotdesk2=╨Ю╤В╨┐╤А╨░╨▓╨║╨░ ╨╜╨╡╨╛╨▒╤П╨╖╨░╤В╨╡╨╗╤М╨╜╤Л╤Е ╨┤╨╕╨░╨│╨╜╨╛╤Б╤В╨╕╤З╨╡╤Б╨║╨╕╤Е ╨┤╨░╨╜╨╜╤Л╤Е"
-set "mnotdesk3=. ╨Т╤Л ╨╝╨╛╨╢╨╡╤В╨╡ ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В╤М ╨╕╨╗╨╕ ╨╕╨╖╨╝╨╡╨╜╨╕╤В╤М ╤Б╨▓╨╛╨╕ ╤В╨╡╨║╤Г╤Й╨╕╨╡ ╨╜╨░╤Б╤В╤А╨╛╨╣╨║╨╕ ╨▓"
-set "mnotdesk4=╨Ф╨╕╨░╨│╨╜╨╛╤Б╤В╨╕╨║╨░ ╨╕ ╨Ю╤В╨╖╤Л╨▓╤Л"
-set "unrtitle=╨Я╤А╨╡╨║╤А╨░╤В╨╕╤В╤М ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╤Л╤Е ╤Б╨▒╨╛╤А╨╛╨║"
-set "unrtogtitle=╨Ю╤В╨╝╨╡╨╜╨╕╤В╤М ╤А╨╡╨│╨╕╤Б╤В╤А╨░╤Ж╨╕╤О ╤Н╤В╨╛╨│╨╛ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░ ╨┐╨╛╤Б╨╗╨╡ ╨▓╤Л╤Е╨╛╨┤╨░ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨╣ ╨▓╨╡╤А╤Б╨╕╨╕ Windows"
-set "unrtogdesk=╨Ф╨╛╤Б╤В╤Г╨┐╨╜╨╛ ╨┤╨╗╤П ╨║╨░╨╜╨░╨╗╨╛╨▓ ╨▒╨╡╤В╨░-╨▓╨╡╤А╤Б╨╕╨╕ ╨╕ ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨│╨╛ ╨▓╤Л╨┐╤Г╤Б╨║╨░. ╨Т╨║╨╗╤О╤З╨╕╤В╨╡ ╤Н╤В╨╛╤В ╨┐╨░╤А╨░╨╝╨╡╤В╤А, ╤З╤В╨╛╨▒╤Л ╨┐╤А╨╡╨║╤А╨░╤В╨╕╤В╤М ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╤Л╤Е ╤Б╨▒╨╛╤А╨╛╨║ ╨┐╨╛╤Б╨╗╨╡ ╨╖╨░╨┐╤Г╤Б╨║╨░ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨│╨╛ ╨╛╨▒╤Й╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛╨│╨╛ ╨╛╤Б╨╜╨╛╨▓╨╜╨╛╨│╨╛ ╨▓╤Л╨┐╤Г╤Б╨║╨░ Windows. ╨Ф╨╛ ╤Н╤В╨╛╨│╨╛ ╨╝╨╛╨╝╨╡╨╜╤В╨░ ╨▓╨░╤И╨╡ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╛ ╨▒╤Г╨┤╨╡╤В ╨┐╨╛╨╗╤Г╤З╨░╤В╤М ╤Б╨▒╨╛╤А╨║╨╕ ╨┤╨╗╤П ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕, ╤З╤В╨╛╨▒╤Л ╨┐╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╤В╤М ╨╡╨│╨╛ ╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╛╤Б╤В╤М. ╨Т╤Б╨╡ ╨▓╨░╤И╨╕ ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╤П, ╨┤╤А╨░╨╣╨▓╨╡╤А╤Л ╨╕ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╤Л ╨▒╤Г╨┤╤Г╤В ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╤Л ╨┤╨░╨╢╨╡ ╨┐╨╛╤Б╨╗╨╡ ╤В╨╛╨│╨╛, ╨║╨░╨║ ╨▓╤Л ╨┐╨╡╤А╨╡╤Б╤В╨░╨╜╨╡╤В╨╡ ╨┐╨╛╨╗╤Г╤З╨░╤В╤М ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╤Л╨╡ ╤Б╨▒╨╛╤А╨║╨╕."
-set "unrlinktitle=╨С╤Л╤Б╤В╤А╨░╤П ╨╛╤В╨╝╨╡╨╜╨░ ╤А╨╡╨│╨╕╤Б╤В╤А╨░╤Ж╨╕╨╕ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░"
-set "unrlinkdesk=╨з╤В╨╛╨▒╤Л ╨┐╤А╨╡╨║╤А╨░╤В╨╕╤В╤М ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╤Б╨▒╨╛╤А╨╛╨║ Insider Preview ╨╜╨░ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨╡, ╨▓╤Л╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╤З╨╕╤Б╤В╤Г╤О ╤Г╤Б╤В╨░╨╜╨╛╨▓╨║╤Г ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╡╨╣ ╨▓╨╡╤А╤Б╨╕╨╕ Windows. ╨Я╤А╨╕╨╝╨╡╤З╨░╨╜╨╕╨╡. ╨Я╤А╨╕ ╤Н╤В╨╛╨╝ ╨▒╤Г╨┤╤Г╤В ╤Г╨┤╨░╨╗╨╡╨╜╤Л ╨▓╤Б╨╡ ╨▓╨░╤И╨╕ ╨┤╨░╨╜╨╜╤Л╨╡ ╨╕ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨░ ╤Б╨▓╨╡╨╢╨░╤П ╨║╨╛╨┐╨╕╤П Windows."
-set "unrreltext=╨Т╤Л╤Е╨╛╨┤ ╨╕╨╖ ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л ╨┐╤А╨╡╨┤╨▓╨░╤А╨╕╤В╨╡╨╗╤М╨╜╨╛╨╣ ╨╛╤Ж╨╡╨╜╨║╨╕ Windows"
-set "agrt=                           ╨б╨╛╨│╨╗╨░╤И╨╡╨╜╨╕╨╡ ╨╛╨▒ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╨╜╨╕╨╕ ORM Insider"                                 
-set "agr1=^|               ╨Я╤А╨╕╨╝╨╡╨╜╤П╤П ╤Б╨║╤А╨╕╨┐╤В ORM Insider ╨Т╤Л ╨┐╨╛╨╜╨╕╨╝╨░╨╡╤В╨╡ ╨▓╤Б╨╡ ╤А╨╕╤Б╨║╨╕ ╨╕ ╨╗╤О╨▒╤Л╨╡               ^|"
-set "agr2=^|       ╨┐╨╛╨▓╤А╨╡╨╢╨┤╨╡╨╜╨╕╤П ╨▓╨░╤И╨╡╨│╨╛ ╨║╨╛╨╝╨┐╤М╤О╤В╨╡╤А╨░ ╨╕╨╖-╨╖╨░ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╨╕╤П ╤Б╨╛╨▓╨╝╨╡╤Б╤В╨╕╨╝╨╛╤Б╤В╨╕ ╨╜╨╡ ╨┐╨╛╨║╤А╤Л╨▓╨░╤О╤В╤Б╤П      ^|"
-set "agr3=^|         ╨│╨░╤А╨░╨╜╤В╨╕╨╡╨╣ ╨┐╤А╨╛╨╕╨╖╨▓╨╛╨┤╨╕╤В╨╡╨╗╤П ╨╕╨╗╨╕ ╨░╨▓╤В╨╛╤А╨░╨╝╨╕ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╤Б╨║╤А╨╕╨┐╤В╨░. ╨Ф╨╡╤В╨░╨╗╨╕ ╨┐╨╛ ╤Б╤Б╤Л╨╗╨║╨╡:        ^|"
-set "agr4=^|         ╨Т╤Л╨▒╤А╨░╨▓ ╨Я╤А╨╕╨╜╤П╤В╤М, ╨▓╤Л ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨░╨╡╤В╨╡, ╤З╤В╨╛ ╨┐╤А╨╛╤З╨╕╤В╨░╨╗╨╕ ╨╕ ╨┐╨╛╨╜╤П╨╗╨╕ ╤Н╤В╨╛ ╤Б╨╛╨│╨╗╨░╤И╨╡╨╜╨╕╨╡.       ^|"
-set "agr5=^|                [1] ╨Я╤А╨╕╨╜╤П╤В╤М                                                             ^|"
-set "agr6=^|                [2] ╨Ю╤В╨║╨░╨╖╨░╤В╤М╤Б╤П                                                          ^|"
+set "chadmin=^|                      Необходимо запускать от имени Администратора                      ^|"
+set "chbuild=^|       Для работы скрипта необходима версия Windows 10 v20H2 сборка %defbuild% или выше      ^|"
+set "m1=Перейти на"
+set "m2=4] - Отключить проверку совместимости                              ^|"
+set "m3=5] - Включить проверку совместимости                               ^|"
+set "m4=6] - Прекратить получение Инсайдерских сборок                      ^|"
+set "m5=7] - Выход без внесения изменений                                  ^|"
+set "m6=^|                    Отключить проверку совместимости?                                   ^|"
+set "m7=1] - Да                                                            ^|"
+set "m8=2] - Нет                                                           ^|"
+set "mch=| Введите свой выбор"
+set "mcc=^|                     Проверки совместимости"
+set "mce=Включена"
+set "mcd=Отключена"
+set "apc=^|                    Применение изменений...                                             ^|"
+set "apd=^|                    Готово                                                              ^|"
+set "pte=^| Нажмите любую кнопку для выхода                                                        ^|"
+set "rtitle=^|                 Необходима перезагрузка чтобы изменения вступили в силу                ^|"
+set "rdesk=^|                        Хотите перезагрузить компьютер сейчас?                          ^|"
+set "actitle=Учетная запись участника программы предварительной оценки Windows"
+set "acdesc=Нет привязанной учётной записи"
+set "acbutton=Изменить"
+set "cdevdesc=Идеально подходит для технически подкованных пользователей. Первыми получайте доступ к новейшим сборкам Windows 11 на самом раннем этапе цикла разработки с новейшим кодом. Вы заметите некоторые шероховатости и низкую стабильность."
+set "cdevwar=Мы рекомендуем Dev Channel только в том случае, если вы активно выполняете резервное копирование данных и вам комфортно выполнять чистую установку Windows. Этот канал получает сборки, которые имеют некоторые шероховатости и могут быть нестабильными. После установки сборки из Dev Channel единственный способ перейти на другой канал или отменить регистрацию этого устройства - это выполнить чистую установку Windows. Вам нужно будет вручную создать резервную копию и восстановить все данные, которые вы хотите сохранить."
+set "cbetadesc=Идеально подходит для ранних последователей. Эти сборки Windows 11 более надежны, чем сборки из канала Dev, благодаря обновлениям, проверяемым корпорацией Microsoft. Ваш отзыв оказывает значительное воздействие."
+set "crpdesk=Идеально подходит, если вы хотите ознакомиться с исправлениями и некоторыми ключевыми функциями, а также получить возможность доступа к следующей версии Windows, прежде чем она станет общедоступной для всего мира. Этот канал также рекомендуется для коммерческих пользователей."
+set "dstitle=На вашем устройстве установлена новейшая версия сборки"
+set "dsdesk=Информация о текущей версии доступна в разделе Система - О системе"
+set "dsltitle=Последние изменения в сборке"
+set "dsbutton=О системе"
+set "conftitle=Посмотреть текущие параметры программы предварительной оценки"
+set "confrlink=Если хотите изменить настройки Windows Insider или прекратить участие, пожалуйста используйте скрипт"
+set "lm=Узнать больше"
+set "mtitle=Устройство зарегистрировано с помощью ORM-Insider"
+set "mdesc=Это устройство было зарегистрировано в программе предварительной оценки Windows с помощью ORM-Insider"
+set "aco=Выбранные настройки"
+set "mnottitle=Уведомление о настройках телеметрии"
+set "mnotdesk1=Программа предварительной оценки Windows требует, чтобы в настройках сбора диагностических данных была включена"
+set "mnotdesk2=Отправка необязательных диагностических данных"
+set "mnotdesk3=. Вы можете проверить или изменить свои текущие настройки в"
+set "mnotdesk4=Диагностика и Отзывы"
+set "unrtitle=Прекратить получение предварительных сборок"
+set "unrtogtitle=Отменить регистрацию этого устройства после выхода следующей версии Windows"
+set "unrtogdesk=Доступно для каналов бета-версии и предварительного выпуска. Включите этот параметр, чтобы прекратить получение предварительных сборок после запуска следующего общедоступного основного выпуска Windows. До этого момента ваше устройство будет получать сборки для предварительной оценки, чтобы поддерживать его безопасность. Все ваши приложения, драйверы и параметры будут сохранены даже после того, как вы перестанете получать предварительные сборки."
+set "unrlinktitle=Быстрая отмена регистрации устройства"
+set "unrlinkdesk=Чтобы прекратить получение сборок Insider Preview на устройстве, выполните чистую установку последней версии Windows. Примечание. При этом будут удалены все ваши данные и установлена свежая копия Windows."
+set "unrreltext=Выход из программы предварительной оценки Windows"
+set "agrt=                           Соглашение об использовании ORM Insider"                                 
+set "agr1=^|               Применяя скрипт ORM Insider Вы понимаете все риски и любые               ^|"
+set "agr2=^|       повреждения вашего компьютера из-за отсутствия совместимости не покрываются      ^|"
+set "agr3=^|         гарантией производителя или авторами данного скрипта. Детали по ссылке:        ^|"
+set "agr4=^|         Выбрав Принять, вы подтверждаете, что прочитали и поняли это соглашение.       ^|"
+set "agr5=^|                [1] Принять                                                             ^|"
+set "agr6=^|                [2] Отказаться                                                          ^|"
 goto :CHECK_BUILD
 
 :EN_LOCALE
 set "chadmin=^|                   This script needs to be executed as an Administrator.                ^|"
-set "chbuild=^|      This script is compatible only with Windows 10 v1809 build %defbuild% and later.       ^|"
+set "chbuild=^|      This script is compatible only with Windows 10 v20H2 build %defbuild% and later.       ^|"
 set "m1=Enroll to"
-set "m2=^|                    [4] - Disable compatibility check                                   ^|"
-set "m3=^|                    [5] - Enable compatibility check                                    ^|"
-set "m4=^|                    [6] - Stop receiving Insider Preview builds                         ^|"
-set "m5=^|                    [7] - Quit without making any changes                               ^|"
+set "m2=4] - Disable compatibility check                                   ^|"
+set "m3=5] - Enable compatibility check                                    ^|"
+set "m4=6] - Stop receiving Insider Preview builds                         ^|"
+set "m5=7] - Quit without making any changes                               ^|"
 set "m6=^|                    Disable compatibility check?                                        ^|"
 set "m7=1] - Yes                                                           ^|"
 set "m8=2] - No                                                            ^|"
 set "mch=| Enter Your Choice"
+set "mcc=^|                        Compatibility check"
+set "mce=Enabled"
+set "mcd=Disabled"
 set "apc=^|                    Applying changes...                                                 ^|"
 set "apd=^|                    Done                                                                ^|"
 set "pte=^| Press any key to exit.                                                                 ^|"
@@ -480,7 +416,11 @@ set "agre=^|                                                                    
 set "agrs=^|________________________________________________________________________________________^|"
 set "agrd=^|========================================================================================^|"
 set "me=^|                    ["
-set "defbuild=17763"
+set "defbuild=19042"
+set "sclink=https://raw.githubusercontent.com/AveYo/MediaCreationTool.bat/main/bypass11/Skip_TPM_Check_on_Dynamic_Update.cmd"
+for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (
+  set ESC=%%b
+)
 for /f "tokens=2-8 delims= " %%a in ('powershell -c "(Get-WmiObject -class Win32_OperatingSystem).Caption"') do set "os=%%a %%b %%c %%d %%e %%f"
 for /f "tokens=4-5 delims=[]." %%a in ('ver') do set "build=%%a.%%b"
 for /f "tokens=1 delims=-" %%l in ('powershell -c "(get-uiculture).name"') do set "lang=%%l"
