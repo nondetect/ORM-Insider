@@ -1,5 +1,5 @@
 @echo off
-set "scriptver=2.9.5"
+set "scriptver=2.9.6"
 title ORM-Insider %scriptver%
 mode con:cols=90 lines=31
 chcp 866 >nul
@@ -153,6 +153,7 @@ if errorlevel 1 goto:ENROLL_SKIP_CHECK
 reg delete "%WSH%\Account" /f
 reg delete "%WSH%\Applicability" /f
 reg delete "%WSH%\Cache" /f
+reg delete "%WSH%\ClientState" /f
 reg delete "%WSH%\UI" /f
 reg delete "%cver%\WindowsUpdate\SLS\Programs\WUMUDCat" /f
 reg delete "%cver%\WindowsUpdate\SLS\Programs\Ring%Ring%" /f
@@ -180,6 +181,8 @@ reg add "%WSH%\Applicability" /f /t REG_DWORD /v RingId /d %RID%
 reg add "%WSH%\Applicability" /f /t REG_SZ /v Ring /d "%Ring%"
 reg add "%WSH%\Applicability" /f /t REG_SZ /v ContentType /d "%Content%"
 reg add "%WSH%\Applicability" /f /t REG_SZ /v BranchName /d "%Channel%"
+reg add "%WSH%\ClientState" /f /t REG_DWORD /v PilotInfoRing /d 3
+reg add "%WSH%\ClientState" /f /t REG_DWORD /v ErrorState /d 1
 reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIRing /d "%Ring%"
 reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIContentType /d "%Content%"
 reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIBranch /d "%Channel%"
