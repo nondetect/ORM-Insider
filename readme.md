@@ -1,6 +1,6 @@
 # ORM-Insider
 
-![Screenshot of ORM-Insider](https://i.imgur.com/F9Hxl9a.png)
+![Screenshot of ORM-Insider](https://i.imgur.com/L6H8g7b.png)
 
 ## Description
 
