@@ -1,7 +1,7 @@
 @echo off
-set "scriptver=2.9.6"
+set "scriptver=2.9.7"
 title ORM-Insider %scriptver%
-mode con:cols=90 lines=31
+mode con:cols=90 lines=33
 chcp 866 >nul
 goto :LOCALE
 
@@ -67,11 +67,13 @@ echo.^|                            Special thank's abbodi1406 ^& AveYo          
 echo.%agre%
 echo.%agrd%
 echo.%agre%
-echo.%me%1] - %m1% Dev Channel
+echo.%me%1] - %m1% Canary Channel
 echo.%agre%
-echo.%me%2] - %m1% Beta Channel
+echo.%me%2] - %m1% Dev Channel
 echo.%agre%
-echo.%me%3] - %m1% Release Preview Channel
+echo.%me%3] - %m1% Beta Channel
+echo.%agre%
+echo.%me%4] - %m1% Release Preview Channel
 echo.%agre%
 echo.%agrd%
 echo.%agre%
@@ -89,22 +91,39 @@ echo.%agre%
 echo.%me%%m5%
 echo.%agrs%
 echo.%agre%
-choice /C:1234567 /N /M "%mch% [1,2,3,4,5,6,7] : "
-if errorlevel 7 exit
-if errorlevel 6 goto:STOP_INSIDER
-if errorlevel 5 goto:EX_REMOVE_SKIP_CHECK
-if errorlevel 4 goto:EX_SKIP_CHECK
-if errorlevel 3 goto:ENROLL_RP
-if errorlevel 2 goto:ENROLL_BETA
-if errorlevel 1 goto:ENROLL_DEV
+choice /C:12345678 /N /M "%mch% [1,2,3,4,5,6,7,8] : "
+if errorlevel 8 exit
+if errorlevel 7 goto:STOP_INSIDER
+if errorlevel 6 goto:EX_REMOVE_SKIP_CHECK
+if errorlevel 5 goto:EX_SKIP_CHECK
+if errorlevel 4 goto:ENROLL_RP
+if errorlevel 3 goto:ENROLL_BETA
+if errorlevel 2 goto:ENROLL_DEV
+if errorlevel 1 goto:ENROLL_CANARY
+
+:ENROLL_CANARY
+set "Channel=CanaryChannel"
+set "uibr=Canary"
+set "Fancy=Canary Channel"
+set "BRL="
+set "Content=Mainline"
+set "Ring=External"
+set "RID=11"
+set "activec=true"
+set "actived=false"
+set "activeb=false"
+set "activerp=false"
+goto :CHECK_CHOICE
 
 :ENROLL_DEV
 set "Channel=Dev"
+set "uibr=Dev"
 set "Fancy=Dev Channel"
 set "BRL=2"
 set "Content=Mainline"
 set "Ring=External"
 set "RID=11"
+set "activec=false"
 set "actived=true"
 set "activeb=false"
 set "activerp=false"
@@ -112,11 +131,13 @@ goto :CHECK_CHOICE
 
 :ENROLL_BETA
 set "Channel=Beta"
+set "uibr=Beta"
 set "Fancy=Beta Channel"
 set "BRL=4"
 set "Content=Mainline"
 set "Ring=External"
 set "RID=11"
+set "activec=false"
 set "actived=false"
 set "activeb=true"
 set "activerp=false"
@@ -124,11 +145,13 @@ goto :CHECK_CHOICE
 
 :ENROLL_RP
 set "Channel=ReleasePreview"
+set "uibr=ReleasePreview"
 set "Fancy=Release Preview Channel"
 set "BRL=8"
 set "Content=Mainline"
 set "Ring=External"
 set "RID=11"
+set "activec=false"
 set "actived=false"
 set "activeb=false"
 set "activerp=true"
@@ -162,8 +185,8 @@ reg delete "%cver%\WindowsUpdate\SLS\Programs\RingPreview" /f
 reg delete "%cver%\WindowsUpdate\SLS\Programs\RingInsiderSlow" /f
 reg delete "%cver%\WindowsUpdate\SLS\Programs\RingInsiderFast" /f
 reg delete "%cver%\Policies\DataCollection" /f /v AllowTelemetry
-reg delete "%cdat%\DataCollection" /f /v AllowTelemetry
-reg delete "%cdat%\WindowsUpdate" /f /v BranchReadinessLevel
+reg delete "%wdat%\DataCollection" /f /v AllowTelemetry
+reg delete "%wdat%\WindowsUpdate" /f /v BranchReadinessLevel
 goto :EOF
 
 :ADD_INSIDER_CONFIG
@@ -171,7 +194,7 @@ reg add "%cver%\WindowsUpdate\Orchestrator" /f /t REG_DWORD /v EnableUUPScan /d 
 reg add "%cver%\WindowsUpdate\SLS\Programs\Ring%Ring%" /f /t REG_DWORD /v Enabled /d 1
 reg add "%cver%\WindowsUpdate\SLS\Programs\WUMUDCat" /f /t REG_DWORD /v WUMUDCATEnabled /d 1
 reg add "%cver%\Policies\DataCollection" /f /t REG_DWORD /v AllowTelemetry /d 3
-if defined BRL reg add "%cdat%\WindowsUpdate" /f /t REG_DWORD /v BranchReadinessLevel /d %BRL%
+if defined BRL reg add "%wdat%\WindowsUpdate" /f /t REG_DWORD /v BranchReadinessLevel /d %BRL%
 reg add "%WSH%\Applicability" /f /t REG_DWORD /v EnablePreviewBuilds /d 2
 reg add "%WSH%\Applicability" /f /t REG_DWORD /v IsBuildFlightingEnabled /d 1
 reg add "%WSH%\Applicability" /f /t REG_DWORD /v IsConfigSettingsFlightingEnabled /d 1
@@ -185,11 +208,11 @@ reg add "%WSH%\ClientState" /f /t REG_DWORD /v PilotInfoRing /d 3
 reg add "%WSH%\ClientState" /f /t REG_DWORD /v ErrorState /d 1
 reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIRing /d "%Ring%"
 reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIContentType /d "%Content%"
-reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIBranch /d "%Channel%"
+reg add "%WSH%\UI\Selection" /f /t REG_SZ /v UIBranch /d "%uibr%"
 reg add "%WSH%\UI\Visibility" /f /t REG_DWORD /v UIDisabledElements_Rejuv /d 65517
 reg add "%WSH%\UI\Visibility" /f /t REG_DWORD /v UIHiddenElements_Rejuv /d 65508
 reg add "%WSH%\UI\Visibility" /f /t REG_DWORD /v UIErrorMessageVisibility /d 192
-reg add "%WSH%\Cache" /f /t REG_SZ /v "ConfigurationOptionList" /d "{\"ConfigurationOptionList\":[{\"Name\":\"Dev\",\"Alias\":\"Dev Channel\",\"Description\":\"%cdevdesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Dev\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%actived%,\"Title\":\"Dev\",\"Warning\":\"%cdevwar%\"},{\"Name\":\"Beta\",\"Alias\":\"Beta Channel (Recommended)\",\"Description\":\"%cbetadesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Beta\",\"Ring\":\"External\",\"IsRecommended\":true,\"RecommendedOnly\":false,\"IsValid\":%activeb%,\"Title\":\"Beta\",\"Warning\":\"\"},{\"Name\":\"ReleasePreview\",\"Alias\":\"Release Preview Channel\",\"Description\":\"%crpdesk%\",\"ContentType\":\"Mainline\",\"Branch\":\"ReleasePreview\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%activerp%,\"Title\":\"Release Preview\",\"Warning\":\"\"}]}"
+reg add "%WSH%\Cache" /f /t REG_SZ /v "ConfigurationOptionList" /d "{\"ConfigurationOptionList\":[{\"Name\":\"Canary\",\"Alias\":\"Canary Channel\",\"Description\":\"%ccandesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Canary\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%activec%,\"Title\":\"Canary\",\"Warning\":\"%ccanwar%\"},{\"Name\":\"Dev\",\"Alias\":\"Dev Channel\",\"Description\":\"%cdevdesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Dev\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%actived%,\"Title\":\"Dev\",\"Warning\":\"%cdevwar%\"},{\"Name\":\"Beta\",\"Alias\":\"Beta Channel (Recommended)\",\"Description\":\"%cbetadesc%\",\"ContentType\":\"Mainline\",\"Branch\":\"Beta\",\"Ring\":\"External\",\"IsRecommended\":true,\"RecommendedOnly\":false,\"IsValid\":%activeb%,\"Title\":\"Beta\",\"Warning\":\"\"},{\"Name\":\"ReleasePreview\",\"Alias\":\"Release Preview Channel\",\"Description\":\"%crpdesk%\",\"ContentType\":\"Mainline\",\"Branch\":\"ReleasePreview\",\"Ring\":\"External\",\"IsRecommended\":false,\"RecommendedOnly\":false,\"IsValid\":%activerp%,\"Title\":\"Release Preview\",\"Warning\":\"\"}]}"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "AccountText" /d "{\"Description\":\"%acdesc%\",\"Title\":\"%actitle%\",\"ButtonTitle\":\"%acbutton%\"}"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "DeviceStatusBarText" /d "{\"Subtitle\":\"%dsdesk%\",\"LinkTitle\":\"%dsltitle%\",\"LinkUrl\":\"https://aka.ms/%Channel%Latest\",\"ButtonUrl\":\"ms-settings:about\",\"Status\":1,\"Title\":\"%dstitle%\",\"ButtonTitle\":\"%dsbutton%\"}"
 reg add "%WSH%\UI\Strings" /f /t REG_SZ /v "ConfigurationExpanderText_Rejuv" /d "{\"Title\":\"%conftitle%\",\"RelatedLinkText\":\"%confrlink%\",\"RelatedLinkUrl\":\"https://github.com/nondetect/ORM-Insider/releases\"}"
@@ -287,12 +310,11 @@ if errorlevel 1 ( shutdown -r -t 0 )
 :RU_LOCALE
 set "chadmin=^|                      Необходимо запускать от имени Администратора                      ^|"
 set "chbuild=^|       Для работы скрипта необходима версия Windows 10 v20H2 сборка %defbuild% или выше      ^|"
-set "cinet=^|                     Для работы необходимо подключение к Интернету                      ^|"
 set "m1=Перейти на"
-set "m2=4] - Отключить проверку совместимости                              ^|"
-set "m3=5] - Включить проверку совместимости                               ^|"
-set "m4=6] - Прекратить получение Инсайдерских сборок                      ^|"
-set "m5=7] - Выход                                                         ^|"
+set "m2=5] - Отключить проверку совместимости                              ^|"
+set "m3=6] - Включить проверку совместимости                               ^|"
+set "m4=7] - Прекратить получение Инсайдерских сборок                      ^|"
+set "m5=8] - Выход без внесения изменений                                  ^|"
 set "m6=^|                    Отключить проверку совместимости?                                   ^|"
 set "m7=1] - Да                                                            ^|"
 set "m8=2] - Нет                                                           ^|"
@@ -308,9 +330,11 @@ set "rdesk=^|                        Хотите перезагрузить к�
 set "actitle=Учетная запись участника программы предварительной оценки Windows"
 set "acdesc=Нет привязанной учётной записи"
 set "acbutton=Изменить"
-set "cdevdesc=Идеально подходит для технически подкованных пользователей. Первыми получайте доступ к новейшим сборкам Windows 11 на самом раннем этапе цикла разработки с новейшим кодом. Вы заметите некоторые шероховатости и низкую стабильность."
+set "ccandesc=Идеально подходит для технически подкованных пользователей. Предварительно просматривайте новейшие изменения платформы на раннем этапе цикла разработки. Эти сборки выпускаются с ограниченной документацией, без тщательной проверки и могут быть нестабильными."
+set "ccanwar=..."
+set "cdevdesc=Идеально подходит для энтузиастов. Получайте доступ к новейшим предварительным сборкам Windows 11 по мере формирования новых идей и разработки функций на длительный срок. Вы заметите некоторые шероховатости и низкую стабильность."
 set "cdevwar=Мы рекомендуем Dev Channel только в том случае, если вы активно выполняете резервное копирование данных и вам комфортно выполнять чистую установку Windows. Этот канал получает сборки, которые имеют некоторые шероховатости и могут быть нестабильными. После установки сборки из Dev Channel единственный способ перейти на другой канал или отменить регистрацию этого устройства - это выполнить чистую установку Windows. Вам нужно будет вручную создать резервную копию и восстановить все данные, которые вы хотите сохранить."
-set "cbetadesc=Идеально подходит для ранних последователей. Эти сборки Windows 11 более надежны, чем сборки из канала Dev, благодаря обновлениям, проверяемым корпорацией Microsoft. Ваш отзыв оказывает значительное воздействие."
+set "cbetadesc=Идеально подходит для ранних последователей. Эти сборки Windows 11 более надежны, чем сборки из нашего канала Dev, благодаря обновлениям, проверяемым корпорацией Майкрософт. Ваш отзыв оказывает значительное воздействие."
 set "crpdesk=Идеально подходит, если вы хотите ознакомиться с исправлениями и некоторыми ключевыми функциями, а также получить возможность доступа к следующей версии Windows, прежде чем она станет общедоступной для всего мира. Этот канал также рекомендуется для коммерческих пользователей."
 set "dstitle=На вашем устройстве установлена новейшая версия сборки"
 set "dsdesk=Информация о текущей версии доступна в разделе Система - О системе"
@@ -345,12 +369,11 @@ goto :CHECKS
 :EN_LOCALE
 set "chadmin=^|                   This script needs to be executed as an Administrator.                ^|"
 set "chbuild=^|      This script is compatible only with Windows 10 v20H2 build %defbuild% and later.       ^|"
-set "cinet=^|                        You need an Internet connection to work.                        ^|"
 set "m1=Enroll to"
-set "m2=4] - Disable compatibility check                                   ^|"
-set "m3=5] - Enable compatibility check                                    ^|"
-set "m4=6] - Stop receiving Insider Preview builds                         ^|"
-set "m5=7] - Exit                                                          ^|"
+set "m2=5] - Disable compatibility check                                   ^|"
+set "m3=6] - Enable compatibility check                                    ^|"
+set "m4=7] - Stop receiving Insider Preview builds                         ^|"
+set "m5=8] - Quit without making any changes                               ^|"
 set "m6=^|                    Disable compatibility check?                                        ^|"
 set "m7=1] - Yes                                                           ^|"
 set "m8=2] - No                                                            ^|"
@@ -366,7 +389,9 @@ set "rdesk=^|                         Do you want restart your computer now?    
 set "actitle=Windows Insider account"
 set "acdesc=No account linked"
 set "acbutton=Edit"
-set "cdevdesc=Ideal for highly technical users. Be the first to access the latest Windows 11 builds earliest in the development cycle with the newest code. There will be some rough edges and low stability."
+set "ccandesc=Ideal for highly technical users. Preview the latest platform changes early in the development cycle. These builds are released with limited documentation, without extensive validation, and can be unstable."
+set "ccanwar=..."
+set "cdevdesc=Ideal for enthusiasts. Access the latest Windows 11 preview builds as we incubate new ideas and develop long lead features. There will be some rough edges and low stability."
 set "cdevwar=We recommend the Dev Channel only if you actively back up your data and are comfortable clean installing Windows. This channel receives builds that may have rough edges or be unstable. Once you install a build from the Dev Channel, the only way to move to another channel or unenroll this device is to clean install Windows. You?ll need to manually back up and restore any data you want to keep."
 set "cbetadesc=Ideal for early adopters. These Windows 11 builds will be more reliable than builds from our Dev Channel, with updates validated by Microsoft. Your feedback has the greatest impact here."
 set "crpdesk=Ideal if you want to preview fixes and certain key features, plus get optional access to the next version of Windows before it's generally available to the world. This channel is also recommended for commercial users."
